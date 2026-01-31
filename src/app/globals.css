@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 36 30% 96%; /* #FAF7F2 Lighter Warm Oatmeal */
+    --foreground: 28 27% 23%; /* #4A3B2A Dark Brown */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 28 27% 23%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 28 27% 23%;
+    
+    --primary: 24 100% 63%; /* #FF8C42 Warm Orange */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 34 91% 75%; /* #F9C784 Creamy Yellow */
+    --secondary-foreground: 28 27% 23%;
+    
+    --muted: 48 20% 90%;
+    --muted-foreground: 28 10% 40%;
+    
+    --accent: 34 50% 90%;
+    --accent-foreground: 28 27% 23%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 28 20% 85%;
+    --input: 28 20% 85%;
+    --ring: 24 100% 63%;
+    
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 24 10% 10%; /* #1C1A19 Deep Warm Charcoal */
+    --foreground: 34 30% 96%; /* Warm White Text */
+    
+    --card: 24 6% 18%; /* #2E2B29 Distinct Warm Dark Card */
+    --card-foreground: 34 30% 96%;
+    
+    --popover: 24 6% 18%;
+    --popover-foreground: 34 30% 96%;
+    
+    --primary: 24 90% 60%; /* Slightly muted orange for dark mode */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 24 10% 25%; /* Lighter warm gray */
+    --secondary-foreground: 34 30% 96%;
+    
+    --muted: 24 10% 20%;
+    --muted-foreground: 24 5% 65%;
+    
+    --accent: 24 10% 25%;
+    --accent-foreground: 34 30% 96%;
+    
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 24 6% 26%;
+    --input: 24 6% 26%;
+    --ring: 24 90% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
