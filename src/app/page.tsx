@@ -8,7 +8,7 @@ import { ProfileView } from "@/components/views/profile-view";
 import { ExploreView } from "@/components/views/explore-view";
 import { FavoritesView } from "@/components/views/favorites-view";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Utensils } from "lucide-react";
+import { Utensils, Download } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("home");
@@ -37,6 +37,14 @@ export default function Home() {
             <span className="font-black text-lg tracking-tight text-foreground/80">吃啥AI</span>
         </div>
         <div className="pointer-events-auto flex items-center gap-2">
+            <a
+              href="/what2eat.apk"
+              download
+              className="p-2 rounded-full bg-secondary/20 hover:bg-secondary/40 transition-colors text-foreground"
+              aria-label="Download App"
+            >
+              <Download className="w-5 h-5" />
+            </a>
             <ThemeToggle />
             <AuthDialog />
         </div>

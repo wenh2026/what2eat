@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">what2eat</string>
+    <string name="title_activity_main">what2eat</string>
+    <string name="package_name">com.what2eat.app</string>
+    <string name="custom_url_scheme">com.what2eat.app</string>
+</resources>
