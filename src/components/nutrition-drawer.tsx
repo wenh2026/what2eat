@@ -56,7 +56,7 @@ export function NutritionDrawer() {
                     return null;
                   }}
                 />
-                <Bar dataKey="current" radius={[0, 4, 4, 0]} background={{ fill: '#eee', radius: [0, 4, 4, 0] }}>
+                <Bar dataKey="current" radius={[0, 4, 4, 0]} background={{ fill: '#eee', radius: 4 }}>
                   {data.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.current > entry.target ? '#ef4444' : '#f97316'} />
                   ))}
