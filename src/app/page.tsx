@@ -26,7 +26,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col w-full min-h-screen md:min-h-[800px] md:h-[850px] md:max-h-[90vh] bg-background relative max-w-md mx-auto md:rounded-[2.5rem] md:border-[8px] md:border-white dark:md:border-neutral-800 md:shadow-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+    <div className="flex flex-col w-full min-h-screen bg-background relative max-w-md mx-auto shadow-sm overflow-hidden">
       
       {/* Top Bar (Logo + Auth) */}
       <div className="absolute top-0 left-0 right-0 p-4 z-40 flex justify-between items-center pointer-events-none">
@@ -51,7 +51,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-16 h-full overflow-hidden">
+      <main className="flex-1 pt-16 pb-24">
         {activeTab === "home" && <HomeView onNavigateToExplore={() => setActiveTab("explore")} />}
         {activeTab === "explore" && <ExploreView />}
         {activeTab === "favorites" && <FavoritesView />}

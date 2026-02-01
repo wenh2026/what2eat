@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className={cn(inter.className, "min-h-screen bg-background antialiased")}>
-        <main className="flex min-h-screen flex-col items-center justify-center p-0 md:p-12 relative overflow-hidden">
+        <main className="relative min-h-screen overflow-hidden">
            {/* Background Decoration */}
            <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-20 pointer-events-none">
              <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary blur-[120px]" />

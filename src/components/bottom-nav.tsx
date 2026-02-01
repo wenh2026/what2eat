@@ -11,7 +11,7 @@ interface BottomNavProps {
 
 export function BottomNav({ activeTab, onTabChange, onCameraClick }: BottomNavProps) {
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-white/90 dark:bg-card/95 backdrop-blur-md border-t border-orange-100 dark:border-border px-6 py-2 pb-6 z-50 flex justify-between items-center max-w-md mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-card/95 backdrop-blur-md border-t border-orange-100 dark:border-border px-6 py-2 pb-6 z-50 flex justify-between items-center max-w-md mx-auto">
       
       {/* Home */}
       <button 
