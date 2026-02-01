@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const userPrompt = `我现在的心情/需求是：${mood || "随便，不知道吃啥"}。请帮我决定吃什么！`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Use 3.5 for speed/cost in this simple task, or 4o if configured
+      model: "deepseek-chat", // Use DeepSeek model
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
