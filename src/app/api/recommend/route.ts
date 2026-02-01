@@ -1,6 +1,8 @@
 import { openai } from "@/lib/openai";
 import { NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 export async function POST(request: Request) {
   try {
     const { mood } = await request.json();
