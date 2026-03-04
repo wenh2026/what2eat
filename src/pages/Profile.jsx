@@ -30,7 +30,7 @@ const Profile = () => {
   if (!user) {
     return (
       <div className="bg-white min-h-screen pb-20">
-         <header className="flex items-center justify-between px-6 pt-12 pb-4">
+         <header className="flex items-center justify-between px-6 pt-6 pb-3">
           <div className="w-10 h-10 flex items-center justify-start">
             <button onClick={() => navigate(-1)} className="text-dark-grey hover:text-deep-charcoal transition-colors">
               <span className="material-symbols-outlined text-[28px]">chevron_left</span>
@@ -53,7 +53,7 @@ const Profile = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-white pb-32 text-deep-charcoal transition-colors duration-200 dark:bg-background-dark">
-        <header className="flex items-center justify-between px-6 pt-12 pb-4">
+        <header className="flex items-center justify-between px-6 pt-6 pb-3">
           <div className="w-10 h-10 flex items-center justify-start">
             <button onClick={() => navigate(-1)} className="text-dark-grey hover:text-deep-charcoal transition-colors">
               <span className="material-symbols-outlined text-[28px]">chevron_left</span>
@@ -74,7 +74,7 @@ const Profile = () => {
         </header>
 
         <main className="flex-1 overflow-y-auto pb-32 scrollbar-hide">
-          <section className="flex flex-col items-center px-6 mt-4">
+          <section className="flex flex-col items-center px-6 mt-2">
             <div className="relative">
               <div className="w-32 h-32 rounded-full border-4 border-primary/5 p-1 bg-white dark:bg-deep-charcoal transition-colors">
                 <div className="w-full h-full rounded-full bg-cover bg-center overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-4xl text-gray-300 transition-colors">
