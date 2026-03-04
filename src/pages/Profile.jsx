@@ -52,8 +52,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="text-deep-charcoal min-h-screen flex justify-center items-start bg-white dark:bg-background-dark transition-colors duration-200">
-      <div className="relative w-full max-w-[430px] min-h-screen bg-white dark:bg-background-dark shadow-2xl overflow-hidden flex flex-col transition-colors duration-200">
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-white pb-32 text-deep-charcoal transition-colors duration-200 dark:bg-background-dark">
         <header className="flex items-center justify-between px-6 pt-12 pb-4">
           <div className="w-10 h-10 flex items-center justify-start">
             <button onClick={() => navigate(-1)} className="text-dark-grey hover:text-deep-charcoal transition-colors">
@@ -158,7 +157,6 @@ const Profile = () => {
           </section>
         </main>
 
-      </div>
     </div>
   );
 };
