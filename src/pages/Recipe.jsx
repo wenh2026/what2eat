@@ -1,9 +1,11 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../store/userStore';
 import BottomNav from '../components/BottomNav';
 
 const Recipe = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { recipe } = location.state || {};
@@ -13,9 +15,9 @@ const Recipe = () => {
   if (!recipe) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <p className="mb-4">No recipe data found.</p>
+        <p className="mb-4">{t('recipe_no_data')}</p>
         <button onClick={() => navigate('/vibe')} className="text-primary font-bold">
-          Go to Vibe to generate one!
+          {t('recipe_go_to_vibe_generate')}
         </button>
         <BottomNav />
       </div>
@@ -42,11 +44,11 @@ const Recipe = () => {
       <div className="relative h-64 bg-gray-200 dark:bg-gray-800 transition-colors">
         <img 
           src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-          alt="Food" 
+          alt={t('recipe_food_alt')}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6 text-white">
-          <span className="bg-primary px-3 py-1 rounded-full text-xs font-bold w-fit mb-2">AI SUGGESTION</span>
+          <span className="bg-primary px-3 py-1 rounded-full text-xs font-bold w-fit mb-2">{t('recipe_ai_suggestion')}</span>
           <h1 className="text-3xl font-bold leading-tight">{recipe.suggestion}</h1>
         </div>
         <button 
@@ -65,7 +67,7 @@ const Recipe = () => {
           </div>
           <h3 className="font-bold text-lg mb-2 flex items-center gap-2 dark:text-off-white">
             <span className="material-symbols-outlined text-primary">auto_awesome</span>
-            Why this meal?
+            {t('recipe_why_this_meal')}
           </h3>
           <p className="text-gray-600 dark:text-gray-300 leading-relaxed relative z-10 transition-colors">
             {recipe.reasoning}
@@ -75,25 +77,25 @@ const Recipe = () => {
         {/* Nutrients */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-2xl border border-orange-100 dark:border-orange-900/30 transition-colors">
-            <span className="text-xs text-orange-600 dark:text-orange-400 font-bold uppercase tracking-wider transition-colors">Protein</span>
+            <span className="text-xs text-orange-600 dark:text-orange-400 font-bold uppercase tracking-wider transition-colors">{t('recipe_protein')}</span>
             <p className="text-2xl font-bold text-deep-charcoal dark:text-off-white">{recipe.nutrients.protein}</p>
           </div>
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-100 dark:border-green-900/30 transition-colors">
-            <span className="text-xs text-green-600 dark:text-green-400 font-bold uppercase tracking-wider transition-colors">Calories</span>
+            <span className="text-xs text-green-600 dark:text-green-400 font-bold uppercase tracking-wider transition-colors">{t('recipe_calories')}</span>
             <p className="text-2xl font-bold text-deep-charcoal dark:text-off-white">{recipe.nutrients.calories}</p>
           </div>
         </div>
 
         {/* Ingredients */}
         <div>
-          <h3 className="font-bold text-lg mb-3 dark:text-off-white">Ingredients</h3>
+          <h3 className="font-bold text-lg mb-3 dark:text-off-white">{t('recipe_ingredients')}</h3>
           <ul className="space-y-2">
             {recipe.ingredients?.map((ing, i) => (
               <li key={i} className="flex items-center gap-3 p-3 bg-white dark:bg-deep-charcoal rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
                 <div className="size-2 rounded-full bg-primary/40"></div>
                 <span className="font-medium text-gray-700 dark:text-gray-300">{ing}</span>
               </li>
-            )) || <p className="text-gray-400 dark:text-gray-500 italic">No ingredients listed.</p>}
+            )) || <p className="text-gray-400 dark:text-gray-500 italic">{t('recipe_no_ingredients')}</p>}
           </ul>
         </div>
       </div>
@@ -105,7 +107,7 @@ const Recipe = () => {
           className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-2xl shadow-lg shadow-primary/30 font-bold active:scale-[0.98] transition-all"
         >
           <span className="material-symbols-outlined">check_circle</span>
-          <span>I Ate This (Add to History)</span>
+          <span>{t('recipe_add_to_history')}</span>
         </button>
       </div>
 

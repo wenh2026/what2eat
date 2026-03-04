@@ -56,7 +56,7 @@ const Vibe = () => {
       navigate('/recipe', { state: { recipe: result } });
     } catch (error) {
       console.error('AI Error:', error);
-      alert('Failed to generate suggestion. Please try again.');
+      alert(t('vibe_generate_failed'));
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ const Vibe = () => {
       <section className="mb-8">
         <h2 className="text-lg font-bold mb-4">{t('vibe_life_stage')}</h2>
         <div className="grid grid-cols-3 gap-3">
-          {Object.entries(RDA_DATA).map(([key, data]) => (
+          {Object.entries(RDA_DATA).map(([key]) => (
             <button
               key={key}
               onClick={() => setSelectedLifeStage(key)}

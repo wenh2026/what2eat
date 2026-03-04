@@ -62,19 +62,21 @@ export const calculateNutrientDeviation = (history, userProfile) => {
  * @param {Object} deviationData - The deviation object returned by calculateNutrientDeviation.
  * @returns {String} A generated insight string.
  */
-export const getAIInsight = (deviationData) => {
+export const getAIInsight = (deviationData, t) => {
+  const translate = (key, fallback, options = {}) =>
+    typeof t === 'function' ? t(key, { defaultValue: fallback, ...options }) : fallback;
   const insights = [];
   
   // Analyze specific nutrients
-  if (deviationData.protein < -20) insights.push("Protein intake is low. Consider adding lean meats, beans, or tofu.");
-  if (deviationData.calcium < -20) insights.push("Calcium is below recommended levels. Yogurt or fortified plant milk could help.");
-  if (deviationData.iron < -20) insights.push("Iron levels are low. Leafy greens or red meat might be beneficial.");
-  if (deviationData.vitaminD < -20) insights.push("Vitamin D is insufficient. Consider more sunlight exposure or fortified foods.");
-  if (deviationData.calories > 20) insights.push("Caloric intake is higher than recommended. Watch portion sizes.");
+  if (deviationData.protein < -20) insights.push(translate('history_insight_protein_low', "Protein intake is low. Consider adding lean meats, beans, or tofu."));
+  if (deviationData.calcium < -20) insights.push(translate('history_insight_calcium_low', "Calcium is below recommended levels. Yogurt or fortified plant milk could help."));
+  if (deviationData.iron < -20) insights.push(translate('history_insight_iron_low', "Iron levels are low. Leafy greens or red meat might be beneficial."));
+  if (deviationData.vitaminD < -20) insights.push(translate('history_insight_vitaminD_low', "Vitamin D is insufficient. Consider more sunlight exposure or fortified foods."));
+  if (deviationData.calories > 20) insights.push(translate('history_insight_calories_high', "Caloric intake is higher than recommended. Watch portion sizes."));
   
   if (insights.length === 0) {
-    return "Great job! Your nutrient intake is well-balanced according to the guidelines.";
+    return translate('history_insight_balanced', "Great job! Your nutrient intake is well-balanced according to the guidelines.");
   }
   
-  return `Based on your recent meals: ${insights.join(" ")}`;
+  return translate('history_insight_based_on', "Based on your recent meals: {{details}}", { details: insights.join(" ") });
 };

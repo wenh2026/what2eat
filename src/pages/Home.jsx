@@ -2,14 +2,13 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../store/userStore';
-import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const Home = () => {
   const { t } = useTranslation();
   const { user } = useUserStore();
   const navigate = useNavigate();
 
-  const userName = user?.email?.split('@')[0] || 'Foodie';
+  const userName = user?.email?.split('@')[0] || t('home_default_name');
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white dark:bg-background-dark overflow-x-hidden pb-32 transition-colors duration-200">
@@ -24,7 +23,6 @@ const Home = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <LanguageSwitcher />
           <button className="bg-gray-50 dark:bg-gray-800 border border-primary/10 dark:border-primary/20 p-2 rounded-full shadow-sm transition-colors">
             <span className="material-symbols-outlined text-[#181310] dark:text-off-white">notifications</span>
           </button>
@@ -50,7 +48,7 @@ const Home = () => {
         <div className="relative group">
           <div className="rounded-xl overflow-hidden shadow-2xl shadow-primary/20 bg-white dark:bg-deep-charcoal transition-colors">
             <div className="aspect-[4/5] w-full relative">
-              <img alt="Food Vibe" className="w-full h-full object-cover" src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" />
+              <img alt={t('home_food_vibe_alt')} className="w-full h-full object-cover" src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
               <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
                 <h2 className="text-3xl font-bold mb-2">{t('home_discover_eat')}</h2>

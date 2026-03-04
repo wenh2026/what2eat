@@ -87,11 +87,11 @@ const NutritionBall = ({ deviation }) => {
 };
 
 const History = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { dailyMeals, userProfile, removeMeal } = useUserStore();
   
   const deviation = useMemo(() => calculateNutrientDeviation(dailyMeals, userProfile), [dailyMeals, userProfile]);
-  const insight = useMemo(() => getAIInsight(deviation), [deviation]);
+  const insight = useMemo(() => getAIInsight(deviation, t), [deviation, t]);
 
   // Sort meals by timestamp desc
   const sortedMeals = useMemo(() => {
@@ -100,7 +100,8 @@ const History = () => {
 
   const formatDate = (isoString) => {
     const date = new Date(isoString);
-    return new Intl.DateTimeFormat('en-US', {
+    const locale = i18n.language?.startsWith('zh') ? 'zh-CN' : 'en-US';
+    return new Intl.DateTimeFormat(locale, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     }).format(date);
   };
@@ -155,7 +156,7 @@ const History = () => {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span className="text-xs font-bold bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full transition-colors">
-                    {meal.calories} kcal
+                    {meal.calories} {t('history_kcal_unit')}
                   </span>
                   <button 
                     onClick={() => removeMeal(meal.id)}
@@ -178,7 +179,7 @@ const History = () => {
             <div key={nutrient} className="bg-white dark:bg-deep-charcoal p-4 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-between transition-colors">
               <div className="flex items-center gap-3">
                 <div className={`size-2 rounded-full ${val > 20 ? 'bg-red-500' : val < -20 ? 'bg-orange-500' : 'bg-green-500'}`}></div>
-                <span className="capitalize font-medium text-sm dark:text-off-white">{nutrient.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <span className="capitalize font-medium text-sm dark:text-off-white">{t(`history_nutrient_${nutrient}`, { defaultValue: nutrient.replace(/([A-Z])/g, ' $1').trim() })}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-sm font-bold ${val > 0 ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>

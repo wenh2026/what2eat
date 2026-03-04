@@ -29,16 +29,16 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="bg-white min-h-screen pb-20">
+      <div className="min-h-screen bg-white pb-20 text-deep-charcoal transition-colors duration-200 dark:bg-background-dark dark:text-off-white">
          <header className="flex items-center justify-between px-6 pt-6 pb-3">
           <div className="w-10 h-10 flex items-center justify-start">
-            <button onClick={() => navigate(-1)} className="text-dark-grey hover:text-deep-charcoal transition-colors">
+            <button onClick={() => navigate(-1)} className="text-dark-grey transition-colors hover:text-deep-charcoal dark:text-gray-400 dark:hover:text-off-white">
               <span className="material-symbols-outlined text-[28px]">chevron_left</span>
             </button>
           </div>
-          <h1 className="text-lg font-bold tracking-tight text-deep-charcoal">{t('profile_account')}</h1>
+          <h1 className="text-lg font-bold tracking-tight text-deep-charcoal dark:text-off-white">{t('profile_account')}</h1>
           <div className="flex items-center justify-end gap-3">
-            <button onClick={toggleDarkMode} className="text-primary hover:text-primary-alt transition-colors" title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+            <button onClick={toggleDarkMode} className="text-primary hover:text-primary-alt transition-colors" title={isDarkMode ? t('profile_switch_to_light_mode') : t('profile_switch_to_dark_mode')}>
               <span className="material-symbols-outlined text-[24px]">
                 {isDarkMode ? 'light_mode' : 'dark_mode'}
               </span>
@@ -52,22 +52,22 @@ const Profile = () => {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-white pb-32 text-deep-charcoal transition-colors duration-200 dark:bg-background-dark">
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-white pb-32 text-deep-charcoal transition-colors duration-200 dark:bg-background-dark dark:text-off-white">
         <header className="flex items-center justify-between px-6 pt-6 pb-3">
           <div className="w-10 h-10 flex items-center justify-start">
-            <button onClick={() => navigate(-1)} className="text-dark-grey hover:text-deep-charcoal transition-colors">
+            <button onClick={() => navigate(-1)} className="text-dark-grey transition-colors hover:text-deep-charcoal dark:text-gray-400 dark:hover:text-off-white">
               <span className="material-symbols-outlined text-[28px]">chevron_left</span>
             </button>
           </div>
-          <h1 className="text-lg font-bold tracking-tight text-deep-charcoal dark:text-off-white">我的资料</h1>
+          <h1 className="text-lg font-bold tracking-tight text-deep-charcoal dark:text-off-white">{t('profile_my_profile')}</h1>
           <div className="flex items-center justify-end gap-3">
-            <button onClick={toggleDarkMode} className="text-primary hover:text-primary-alt transition-colors" title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+            <button onClick={toggleDarkMode} className="text-primary hover:text-primary-alt transition-colors" title={isDarkMode ? t('profile_switch_to_light_mode') : t('profile_switch_to_dark_mode')}>
               <span className="material-symbols-outlined text-[24px]">
                 {isDarkMode ? 'light_mode' : 'dark_mode'}
               </span>
             </button>
             <LanguageSwitcher />
-            <button onClick={signOut} className="text-primary hover:text-primary-alt transition-colors" title="Sign Out">
+            <button onClick={signOut} className="text-primary hover:text-primary-alt transition-colors" title={t('profile_sign_out')}>
               <span className="material-symbols-outlined text-[24px]">logout</span>
             </button>
           </div>

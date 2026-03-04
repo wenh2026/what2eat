@@ -16,7 +16,12 @@ i18n
         translation: zh,
       },
     },
-    fallbackLng: 'en',
+    fallbackLng: 'zh',
+    supportedLngs: ['zh', 'en'],
+    detection: {
+      order: ['localStorage'],
+      caches: ['localStorage'],
+    },
     interpolation: {
       escapeValue: false,
     },
