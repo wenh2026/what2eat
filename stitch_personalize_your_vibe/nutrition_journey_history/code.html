@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nutrition Journey &amp; History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#FF7034",
+                        "background-light": "#FFFFFF",
+                        "background-dark": "#23150f",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .circular-progress {
+            background: conic-gradient(#FF7034 82%, #FF703420 0);
+        }
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            left: 19px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #f1f1f1;
+            z-index: 0;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-white text-[#181310] font-display min-h-screen pb-24">
+<div class="sticky top-0 z-50 flex items-center bg-white/90 backdrop-blur-md p-4 justify-between border-b border-gray-100">
+<div class="text-[#181310] flex size-10 items-center justify-center rounded-full hover:bg-gray-50 transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</div>
+<h2 class="text-[#181310] text-lg font-bold leading-tight tracking-tight flex-1 text-center">Nutrition Journey</h2>
+<div class="flex w-10 items-center justify-end">
+<span class="material-symbols-outlined text-[#181310]">calendar_today</span>
+</div>
+</div>
+<main class="max-w-md mx-auto px-4 pt-6 space-y-6">
+<div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
+<div class="relative flex items-center justify-center shrink-0">
+<div class="circular-progress size-24 rounded-full flex items-center justify-center relative">
+<div class="bg-white size-[84%] rounded-full flex flex-col items-center justify-center">
+<span class="text-2xl font-bold text-primary leading-none">82%</span>
+<span class="text-[10px] text-[#8d6c5e] font-medium uppercase">Goal</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-3 flex-1">
+<h3 class="text-lg font-bold leading-tight">Monthly Progress</h3>
+<div class="space-y-2">
+<div class="flex items-center justify-between text-xs font-medium">
+<span class="text-[#8d6c5e]">Protein</span>
+<span class="text-primary">75%</span>
+</div>
+<div class="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 75%"></div>
+</div>
+<div class="flex items-center justify-between text-xs font-medium pt-1">
+<span class="text-[#8d6c5e]">Veggies</span>
+<span class="text-green-600">90%</span>
+</div>
+<div class="h-1.5 w-full bg-green-100 rounded-full overflow-hidden">
+<div class="h-full bg-green-500 rounded-full" style="width: 90%"></div>
+</div>
+<div class="flex items-center justify-between text-xs font-medium pt-1">
+<span class="text-[#8d6c5e]">Carbs</span>
+<span class="text-amber-600">60%</span>
+</div>
+<div class="h-1.5 w-full bg-amber-100 rounded-full overflow-hidden">
+<div class="h-full bg-amber-500 rounded-full" style="width: 60%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-primary/5 rounded-xl p-4 flex gap-3 items-start border border-primary/10">
+<div class="bg-primary rounded-full size-10 shrink-0 flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[20px] fill-1">auto_awesome</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-primary text-sm font-bold">AI Insight</p>
+<p class="text-[#181310] text-sm leading-relaxed">
+                    Great week for veggies! You've reached your fiber goal 4 days in a row. Keep it up!
+                </p>
+</div>
+</div>
+<section class="space-y-4">
+<div class="flex items-center justify-between pb-2">
+<h2 class="text-xl font-bold tracking-tight">Eating History</h2>
+<button class="text-sm font-semibold text-primary">View All</button>
+</div>
+<div class="relative timeline-line space-y-8 pb-4">
+<div class="relative pl-10">
+<div class="absolute left-0 top-1 size-10 rounded-full bg-white border-2 border-primary z-10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[18px]">restaurant</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4">
+<div class="size-20 rounded-lg bg-cover bg-center shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA-avyycLpGT9FeSWb0wFscqH2iYD3N6duvun6fI3JEpnBGFxWq5yo85i06Fwd10TPAbwdd-lHq5jloofstgJxlaHw8AnYRQChM9nem2HdB5n4CjV02rFKqZ5vJSgPVDZa09AXasosvKkdzLGtKLv8FcwJTUvEPR_sQZr9KJhQjpwt-7SsWSq7ZoiJGc-LmqPvJMGmSgRtQWLZZOvMIy22J43cDPgYHLur3YcSytBqvnfOWln0V9UHCtGo_83SYDua-tU3lv-9xiYRB')"></div>
+<div class="flex flex-col justify-between flex-1 py-1">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-bold text-base">Tomato Beef Noodles</h4>
+<span class="material-symbols-outlined text-green-500 text-[18px]" title="Good Choice">eco</span>
+</div>
+<p class="text-[#8d6c5e] text-xs">Today, 12:45 PM</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<span class="text-sm font-semibold text-[#181310]">550 kcal</span>
+<span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Lunch</span>
+</div>
+</div>
+</div>
+</div>
+<div class="relative pl-10">
+<div class="absolute left-0 top-1 size-10 rounded-full bg-white border-2 border-gray-200 z-10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#8d6c5e] text-[18px]">bakery_dining</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 opacity-90">
+<div class="size-20 rounded-lg bg-cover bg-center shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAlgw-L8MjpgP6kCaqd3yUZvqNJMuwBm0n4GHkOL2RaRSGEwegKB_IK-KHaG_kEFSjK2V0XnbVqS2UBRY_MEiyG5b1gyBLd4UOMIZb5QlO7Ulbmxn_9Sf8RtEoWM5TsdkBYwuNFHmYbR4ReRPNvKbknwUE-OzCKj7nUjVEkw8muUGEMmZPLdAc3K_CbI6VdnOr8glJAMnC7HcjxxdWX-j_VqI8gdrQLsT26Vp8rh4eUJAqHg3iZU7DQleqINfifXJU2mmmUMgCnBAhE')"></div>
+<div class="flex flex-col justify-between flex-1 py-1">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-bold text-base">Avocado Sourdough</h4>
+<span class="material-symbols-outlined text-green-500 text-[18px]" title="Good Choice">eco</span>
+</div>
+<p class="text-[#8d6c5e] text-xs">Today, 08:30 AM</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<span class="text-sm font-semibold text-[#181310]">380 kcal</span>
+<span class="bg-gray-100 text-[#8d6c5e] text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Breakfast</span>
+</div>
+</div>
+</div>
+</div>
+<div class="relative pl-10">
+<div class="absolute left-0 top-1 size-10 rounded-full bg-white border-2 border-gray-200 z-10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#8d6c5e] text-[18px]">dinner_dining</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 opacity-90">
+<div class="size-20 rounded-lg bg-cover bg-center shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAGJO0M_H5Q_EdemXkEsjYNhq3YQSq6h05tWWDPThVXHVUqIKqJhXdCv11V6l7Exj2vERA0oDsA8yTCOBnYsvd5n5X5IlVmVmfJV9_pcFlOBEHK15AxIJgDsJFPObafyxJ5saAuGqdWHdAE_7_tALHpzfY3pm0UmGMPJillhpFrLHQMsapeie15_NYpt7Z435W8LrUHNrvm5Y42gAcYRCVrn78z01aXcO6y_fhwaJMTteXCYqm9-_GlT6VImxJnY_WJvFLcaZmaHTk2')"></div>
+<div class="flex flex-col justify-between flex-1 py-1">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-bold text-base">Grilled Salmon Salad</h4>
+<span class="material-symbols-outlined text-green-500 text-[18px]" title="Good Choice">eco</span>
+</div>
+<p class="text-[#8d6c5e] text-xs">Yesterday, 07:15 PM</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<span class="text-sm font-semibold text-[#181310]">420 kcal</span>
+<span class="bg-gray-100 text-[#8d6c5e] text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Dinner</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<button class="fixed bottom-28 right-4 flex items-center gap-2 bg-primary text-white px-5 py-3 rounded-full shadow-lg shadow-primary/30 z-40 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">trending_up</span>
+<span class="font-bold text-sm">Improvement Plan</span>
+</button>
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 pb-8 pt-3 flex justify-around items-center z-50">
+<a class="flex flex-col items-center gap-1 text-[#8d6c5e] transition-colors hover:text-primary" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[11px] font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#FF7034]" href="#">
+<span class="material-symbols-outlined fill-1">history</span>
+<span class="text-[11px] font-bold">History</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#8d6c5e] transition-colors hover:text-primary" href="#">
+<span class="material-symbols-outlined">mood</span>
+<span class="text-[11px] font-bold">Vibe</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#8d6c5e] transition-colors hover:text-primary" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[11px] font-bold">Profile</span>
+</a>
+</nav>
+
+</body></html>

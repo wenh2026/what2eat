@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>吃啥 - Daily Dish Recommendation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#FF7034",
+                        "background-light": "#FFFFFF",
+                        "background-dark": "#23150f",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        :root {
+            --coral-orange: #FF7034;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: max(884px, 100dvh);
+        }
+        .ai-bubble-shape {
+            border-radius: 60% 40% 70% 30% / 40% 50% 50% 60%;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-white text-[#181310] antialiased">
+<div class="relative flex min-h-screen w-full flex-col bg-white overflow-x-hidden pb-32">
+<header class="flex items-center justify-between px-6 pt-6 pb-2">
+<div class="flex items-center gap-2">
+<div class="bg-primary/10 p-2 rounded-full">
+<span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1">flare</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-[#181310]">吃啥</h1>
+</div>
+<button class="bg-gray-50 border border-primary/10 p-2 rounded-full shadow-sm">
+<span class="material-symbols-outlined text-[#181310]">notifications</span>
+</button>
+</header>
+<div class="px-6 py-4">
+<div class="ai-bubble-shape bg-gray-50 border border-primary/20 p-6 shadow-xl shadow-primary/5 max-w-[85%] mx-auto relative">
+<div class="flex flex-col gap-2 items-center text-center">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1">psychology</span>
+<span class="text-[10px] uppercase tracking-widest font-bold text-primary/60">Empathetic AI</span>
+</div>
+<p class="text-[#181310] text-lg font-medium leading-snug">
+                    You've had a demanding day; this warm soup will re-energize you
+                </p>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-gray-50 rotate-45 border-r border-b border-primary/10"></div>
+</div>
+</div>
+<main class="flex-1 px-6 py-2 flex flex-col justify-center">
+<div class="relative group">
+<div class="rounded-xl overflow-hidden shadow-2xl shadow-primary/20 bg-white">
+<div class="aspect-[4/5] w-full relative">
+<img alt="Tomato Beef Noodles" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmyDhLCgYNGn4UZE7788aKDCG-FvtYnilO8ia22BaVg4NwveU7zRJFXUgPPJ33KKdjYwjsPKBXe-wl78TOur2gNqP612pDK5k5L9qgIMLIRcAwHqVW4cJVfhqikVl-cT4I5DpBgvkWQg7veFGzlsgz2hxVJHv_44Hedo4Q28KqlvejbbdZG5gBZdjEvOthGq2wfm8f6zYTlZ4Vx1zOUkTqjwBYD6Hzm_W-DUHET-HjDP4cqOGfOWmUfGbLGRd6aG82PrQQWt0N45AU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-0 left-0 right-0 p-8 text-white">
+<h2 class="text-3xl font-bold mb-2">Tomato Beef Noodles</h2>
+<p class="text-white/90 text-lg italic font-light">"A comforting hug after a long day"</p>
+<div class="flex gap-4 mt-6">
+<div class="bg-white/20 backdrop-blur-md rounded-full px-4 py-1.5 flex items-center gap-2 border border-white/30">
+<span class="material-symbols-outlined text-sm">energy_savings_leaf</span>
+<span class="text-xs font-medium tracking-wide">Vitamin C</span>
+</div>
+<div class="bg-white/20 backdrop-blur-md rounded-full px-4 py-1.5 flex items-center gap-2 border border-white/30">
+<span class="material-symbols-outlined text-sm">fitness_center</span>
+<span class="text-xs font-medium tracking-wide">Protein Rich</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<button class="absolute -bottom-4 right-8 bg-white text-primary px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 border border-primary/10">
+<span class="material-symbols-outlined text-lg">menu_book</span>
+<span>View Recipe</span>
+</button>
+</div>
+</main>
+<div class="px-6 pt-10 pb-4">
+<button class="w-full bg-primary hover:bg-[#ff8552] text-white py-5 rounded-full font-bold text-xl shadow-xl shadow-primary/40 flex items-center justify-center gap-3 active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'wght' 700">check_circle</span>
+<span>Eat This!</span>
+</button>
+</div>
+<nav class="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-100 flex items-center justify-around px-6 z-50 pb-safe">
+<a class="flex flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1">home</span>
+<span class="text-[11px] font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-[#8d6c5e]" href="#">
+<span class="material-symbols-outlined text-[28px]">history</span>
+<span class="text-[11px] font-medium">History</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-[#8d6c5e]" href="#">
+<span class="material-symbols-outlined text-[28px]">magic_button</span>
+<span class="text-[11px] font-medium">Vibe</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-[#8d6c5e]" href="#">
+<span class="material-symbols-outlined text-[28px]">person</span>
+<span class="text-[11px] font-medium">Profile</span>
+</a>
+</nav>
+<div class="h-20"></div>
+</div>
+
+</body></html>

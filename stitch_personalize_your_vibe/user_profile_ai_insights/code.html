@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Profile - 吃啥</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#FF7034",
+                        "background-white": "#FFFFFF",
+                        "background-soft": "#FDFDFD",
+                        "deep-charcoal": "#1A1A1A",
+                        "dark-grey": "#4B5563",
+                        "light-grey": "#F3F4F6",
+                        "off-white": "#F9FAFB",
+                        "card-border": "rgba(0, 0, 0, 0.04)",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: max(884px, 100dvh);
+            background-color: #FFFFFF;
+        }
+        .glass-card {
+            background: #F9FAFB;
+            border: 1px solid theme('colors.card-border');
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+        }
+        .persona-card {
+            background: #F9FAFB;
+            border: 1px solid rgba(255, 112, 52, 0.05);
+            box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.04);
+        }
+        .recipe-card {
+            background: #F9FAFB;
+            border: 1px solid theme('colors.card-border');
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-deep-charcoal min-h-screen flex justify-center items-start">
+<div class="relative w-full max-w-[430px] min-h-screen bg-white shadow-2xl overflow-hidden flex flex-col">
+<header class="flex items-center justify-between px-6 pt-12 pb-4">
+<div class="w-10 h-10 flex items-center justify-start">
+<button class="text-dark-grey hover:text-deep-charcoal transition-colors">
+<span class="material-symbols-outlined text-[28px]">chevron_left</span>
+</button>
+</div>
+<h1 class="text-lg font-bold tracking-tight text-deep-charcoal">我的资料</h1>
+<div class="w-10 h-10 flex items-center justify-end">
+<button class="text-dark-grey hover:text-deep-charcoal transition-colors">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto pb-32 scrollbar-hide">
+<section class="flex flex-col items-center px-6 mt-4">
+<div class="relative">
+<div class="w-32 h-32 rounded-full border-4 border-primary/5 p-1 bg-white">
+<div class="w-full h-full rounded-full bg-cover bg-center overflow-hidden" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB56C009-ol1N2AaPW1ReTSOJR9Ae0xg26gtxPSfG5MpAYEeDwoRYrmeT7n3n7dIe_dtnbA3MPqHO9SIYSUncCS35gkbPnFdBzR5X13vvJ4xD3wVjX-dNm5RUZ0Zm_eMhba9HAQgXJlWYFmyNj3PP1vRpl-Cuok8ojnUfwA0uoEzcshgtEapnR-mHP4ZeGxhIk247TZzcUiGs5W_Tn0eWpUCAS2ZF3qaNHnbawdxQqOuFgqcSkCx0mYjUaQYXnyFp97oQFMbVxZCieB')">
+</div>
+</div>
+<div class="absolute bottom-0 right-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full border-2 border-white shadow-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] fill-1">workspace_premium</span>
+                        GOLD LEVEL
+                    </div>
+</div>
+<div class="text-center mt-4">
+<h2 class="text-2xl font-bold text-deep-charcoal">Alex Chen</h2>
+<p class="text-primary text-sm font-medium mt-1">探索于风味与健康之间</p>
+</div>
+</section>
+<section class="px-6 mt-8">
+<div class="persona-card rounded-2xl p-6 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-[20px]">psychology</span>
+<span class="text-xs font-bold text-primary tracking-widest uppercase">AI Eating Persona</span>
+</div>
+<h3 class="text-xl font-bold mb-2 text-deep-charcoal">The Balanced Soul</h3>
+<p class="text-dark-grey text-sm leading-relaxed italic">
+                        "Your choices reflect a harmony between craving and care, nourishing both the spirit and the body."
+                    </p>
+<div class="mt-4 flex items-center gap-2">
+<div class="h-1.5 flex-1 bg-white rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[78%]"></div>
+</div>
+<span class="text-[10px] font-bold text-dark-grey/50">78% SYNC</span>
+</div>
+</div>
+</section>
+<section class="px-6 mt-6">
+<div class="grid grid-cols-3 gap-3">
+<div class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2 text-[24px]">calendar_today</span>
+<span class="text-[10px] text-dark-grey font-semibold uppercase tracking-tighter">Consistency</span>
+<span class="text-lg font-bold text-deep-charcoal">92%</span>
+</div>
+<div class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2 text-[24px]">nutrition</span>
+<span class="text-[10px] text-dark-grey font-semibold uppercase tracking-tighter">Nutrients</span>
+<span class="text-lg font-bold text-deep-charcoal">High</span>
+</div>
+<div class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2 text-[24px]">favorite</span>
+<span class="text-[10px] text-dark-grey font-semibold uppercase tracking-tighter">Satisfaction</span>
+<span class="text-lg font-bold text-deep-charcoal">4.8</span>
+</div>
+</div>
+</section>
+<section class="mt-8 px-6 mb-8">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold text-deep-charcoal">我的收藏</h3>
+<button class="text-primary text-xs font-bold">查看全部</button>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-4 recipe-card rounded-2xl p-3 shadow-sm">
+<div class="w-16 h-16 rounded-xl bg-cover bg-center flex-shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBGy3egTY1CBsKJjhtGubzYlXXIHK0DJmsZ17iRRTeJ-BGkEOsZKUbTq7VtdN1my8c2RU2OY4r_XuTajeYkZcUbReUHgPCElP0Gi6tAa_cSa1ymVT5LRsq_feguep1B7a0NrtlXfD4C4WVasjOoMnkamQwmSiUytIyFH2jLlc6x3sUfsOVgcbwjK76vB0JKyNj21SnwiWvv1gYPCpxRXGndyQA6b7eBZmIfA1BL0vOxdrpy6iF5H8KSKaN-WK3qHLLooYI83djLF_Wq')"></div>
+<div class="flex-1 min-w-0">
+<p class="font-bold text-sm mb-1 truncate text-deep-charcoal">法式柠檬烤鳕鱼</p>
+<div class="flex items-center gap-2 text-[10px] text-dark-grey/70">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 25 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">local_fire_department</span> High Protein</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px] fill-1">bookmark</span>
+</button>
+</div>
+<div class="flex items-center gap-4 recipe-card rounded-2xl p-3 shadow-sm">
+<div class="w-16 h-16 rounded-xl bg-cover bg-center flex-shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDdXglAeCue0yyGLzJ2F1wAs-sq-E9e9sxOXb3uPFwyBbe_YHEAwQrJMQG0yqa7MPQLaB-QDmL8XrmvS_SnQXRdUf6Ey9ANGBVUmIridGoGv5UlgLnLlGLT9eAPlSde-mlyM4MeHUWuIWcj74rT0iH4YQohrbVhfm1-0-jMoIBTFNi0kKRiW0qchtooK2Jojoi-q5wp_r4NlGzDYtYiJRptsscGStQwt23g8uHFHFC8z8QMPt-5Mho-CrKT2U6OWlvSUbjMAqwQzIqB')"></div>
+<div class="flex-1 min-w-0">
+<p class="font-bold text-sm mb-1 truncate text-deep-charcoal">牛油果水波蛋吐司</p>
+<div class="flex items-center gap-2 text-[10px] text-dark-grey/70">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 12 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">local_fire_department</span> Low Carb</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px] fill-1">bookmark</span>
+</button>
+</div>
+<div class="flex items-center gap-4 recipe-card rounded-2xl p-3 shadow-sm">
+<div class="w-16 h-16 rounded-xl bg-cover bg-center flex-shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA1tKoYMJ0tp5EnvH58Bz-CSEsRMCwEttZXsLocBmM0siVgop5gOlWymi0gFdetr9PkQ2udAAPDWqwaLGwbnjbwgEKTiaspIBSk_qdnyTzL0iWwybco_zvYxH2pQNhYMNTnD4TVPLyNKMtpfYTbmR_s_MrxrQF-T5_Un6jPEujfTP4HabqLgUh5EMliiufzWN9V4qMffj6xmudcHT62HHXskPjQMpQbLHmRr2eKAS4EGQ5dKaiZyvlpSb0CIkZMIZrkjkJ9Dk4m_V_J')"></div>
+<div class="flex-1 min-w-0">
+<p class="font-bold text-sm mb-1 truncate text-deep-charcoal">五彩营养能量碗</p>
+<div class="flex items-center gap-2 text-[10px] text-dark-grey/70">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 15 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">local_fire_department</span> Balanced</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px] fill-1">bookmark</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-light-grey px-6 pt-3 pb-8 flex items-center justify-between z-20 shadow-[-4px_0_15px_rgba(0,0,0,0.02)]">
+<a class="flex flex-col items-center gap-1 text-dark-grey/40 w-1/4" href="#">
+<span class="material-symbols-outlined text-[26px]">home</span>
+<span class="text-[10px] font-bold">首页</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-dark-grey/40 w-1/4" href="#">
+<span class="material-symbols-outlined text-[26px]">history</span>
+<span class="text-[10px] font-bold">历史</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-dark-grey/40 w-1/4" href="#">
+<span class="material-symbols-outlined text-[26px]">auto_awesome</span>
+<span class="text-[10px] font-bold">氛围</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary w-1/4" href="#">
+<span class="material-symbols-outlined text-[26px] fill-1">person</span>
+<span class="text-[10px] font-bold">我的</span>
+</a>
+</nav>
+</div>
+
+</body></html>
