@@ -8,11 +8,13 @@ const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completi
  * Generates a prompt for the AI based on user profile and history.
  * @param {Object} userProfile - The user's profile.
  * @param {Array} history - The user's meal history.
+ * @param {String} language - Preferred response language.
  * @returns {String} The generated prompt.
  */
-export const generatePrompt = (userProfile, history) => {
+export const generatePrompt = (userProfile, history, language = 'zh') => {
   const { lifeStage, currentMood, dietaryIntents } = userProfile;
   const targetGroup = RDA_DATA[lifeStage] || RDA_DATA.adult;
+  const responseLanguage = language?.startsWith('zh') ? 'Chinese (Simplified)' : 'English';
   
   // Calculate deviations to include in the prompt
   const deviations = calculateNutrientDeviation(history, userProfile);
@@ -37,6 +39,7 @@ export const generatePrompt = (userProfile, history) => {
     
     Please suggest a ONE specific meal for the next meal that addresses any nutritional deficiencies and aligns with their current mood.
     The meal should be practical and home-cookable.
+    The fields "suggestion", "reasoning", and each item in "ingredients" must be written in ${responseLanguage}.
     
     IMPORTANT: You must return ONLY valid JSON without any markdown formatting or code blocks.
     Format the response as JSON with fields: 
@@ -52,12 +55,14 @@ export const generatePrompt = (userProfile, history) => {
 /**
  * Call DashScope AI API.
  * @param {String} prompt 
+ * @param {String} language
  * @returns {Promise<Object>}
  */
-export const callAI = async (prompt) => {
+export const callAI = async (prompt, language = 'zh') => {
+  const responseLanguage = language?.startsWith('zh') ? 'Chinese (Simplified)' : 'English';
   if (!API_KEY) {
     console.warn('Missing API Key, using mock data');
-    return mockAIResponse();
+    return mockAIResponse(language);
   }
 
   try {
@@ -70,7 +75,7 @@ export const callAI = async (prompt) => {
       body: JSON.stringify({
         model: 'qwen-turbo',
         messages: [
-          { role: 'system', content: 'You are a helpful nutritionist assistant that outputs only JSON.' },
+          { role: 'system', content: `You are a helpful nutritionist assistant that outputs only JSON. The values of "suggestion", "reasoning", and "ingredients" must be in ${responseLanguage}.` },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7
@@ -92,12 +97,20 @@ export const callAI = async (prompt) => {
 
   } catch (error) {
     console.error('AI Service Error:', error);
-    return mockAIResponse(); // Fallback to mock on error
+    return mockAIResponse(language); // Fallback to mock on error
   }
 };
 
-const mockAIResponse = async () => {
+const mockAIResponse = async (language = 'zh') => {
   await new Promise(resolve => setTimeout(resolve, 1000));
+  if (language?.startsWith('zh')) {
+    return {
+      suggestion: "藜麦黑豆能量碗（模拟）",
+      reasoning: "富含蛋白质和铁，有助于改善你近期的营养缺口。",
+      ingredients: ["藜麦", "黑豆", "牛油果", "青柠"],
+      nutrients: { protein: "20g", calories: "450kcal" }
+    };
+  }
   return {
     suggestion: "Quinoa & Black Bean Bowl (Mock)",
     reasoning: "High in protein and iron to address your recent deficiencies.",

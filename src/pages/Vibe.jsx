@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 const Vibe = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { userProfile, updateUserProfile, dailyMeals } = useUserStore();
   const [mood, setMood] = useState(userProfile.currentMood || 50);
   const [selectedLifeStage, setSelectedLifeStage] = useState(userProfile.lifeStage || 'adult');
@@ -31,6 +31,7 @@ const Vibe = () => {
 
   const handleRefineSelection = async () => {
     setLoading(true);
+    const outputLanguage = i18n.language?.startsWith('zh') ? 'zh' : 'en';
     // 1. Update store
     updateUserProfile({
       currentMood: mood,
@@ -44,13 +45,13 @@ const Vibe = () => {
       currentMood: mood,
       lifeStage: selectedLifeStage,
       dietaryIntents,
-    }, dailyMeals);
+    }, dailyMeals, outputLanguage);
 
     console.log('Generated Prompt:', prompt);
 
     // 3. Call AI
     try {
-      const result = await callAI(prompt);
+      const result = await callAI(prompt, outputLanguage);
       console.log('AI Result:', result);
       // Navigate to Recipe page with result
       navigate('/recipe', { state: { recipe: result } });
