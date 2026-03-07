@@ -11,13 +11,11 @@ const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completi
  * @param {String} language - Preferred response language.
  * @returns {String} The generated prompt.
  */
-export const generatePrompt = (userProfile, history, language = 'zh') => {
+export const generatePrompt = (userProfile, history, language = 'zh', context = {}) => {
   const { lifeStage, currentMood, dietaryIntents } = userProfile;
   const targetGroup = RDA_DATA[lifeStage] || RDA_DATA.adult;
   const responseLanguage = language?.startsWith('zh') ? 'Chinese (Simplified)' : 'English';
-  
-  // Calculate deviations to include in the prompt
-  const deviations = calculateNutrientDeviation(history, userProfile);
+  const deviations = calculateNutrientDeviation(history, userProfile, 'today');
   const deviationsStr = Object.entries(deviations)
     .map(([nutrient, val]) => `${nutrient}: ${val > 0 ? '+' : ''}${val.toFixed(1)}%`)
     .join(', ');
@@ -27,11 +25,15 @@ export const generatePrompt = (userProfile, history, language = 'zh') => {
     : 'No specific dietary restrictions';
 
   const moodDesc = currentMood > 75 ? 'Ecstatic' : currentMood > 40 ? 'Neutral' : 'Stressed';
+  const mealMoment = context.mealMoment || 'dinner';
+  const weather = context.weather || 'mild';
 
   return `
     Act as a nutritionist for a user with the following profile:
     - Life Stage: ${targetGroup.label}
     - Current Mood: ${moodDesc} (Value: ${currentMood}/100)
+    - Meal Moment: ${mealMoment}
+    - Weather: ${weather}
     - ${intentStr}
     
     Recent Nutritional Status (Deviation from RDA):
@@ -47,7 +49,9 @@ export const generatePrompt = (userProfile, history, language = 'zh') => {
       "suggestion": "Meal Name", 
       "reasoning": "Short explanation (max 20 words)", 
       "ingredients": ["ing1", "ing2"],
-      "nutrients": { "protein": "XXg", "calories": "XXXkcal" } 
+      "nutrients": { "protein": "XXg", "calories": "XXXkcal" },
+      "prepTime": "XX min",
+      "steps": ["step 1", "step 2", "step 3"]
     }
   `;
 };
@@ -91,30 +95,56 @@ export const callAI = async (prompt, language = 'zh') => {
     
     if (!content) throw new Error('No content in response');
 
-    // Parse JSON from content (handle potential markdown code blocks)
     const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanContent);
+    return normalizeRecipeResponse(JSON.parse(cleanContent), language);
 
   } catch (error) {
     console.error('AI Service Error:', error);
-    return mockAIResponse(language); // Fallback to mock on error
+    return mockAIResponse(language);
   }
 };
 
 const mockAIResponse = async (language = 'zh') => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   if (language?.startsWith('zh')) {
-    return {
+    return normalizeRecipeResponse({
       suggestion: "藜麦黑豆能量碗（模拟）",
       reasoning: "富含蛋白质和铁，有助于改善你近期的营养缺口。",
       ingredients: ["藜麦", "黑豆", "牛油果", "青柠"],
-      nutrients: { protein: "20g", calories: "450kcal" }
-    };
+      nutrients: { protein: "20g", calories: "450kcal" },
+      prepTime: "20 分钟",
+      steps: ["煮熟藜麦", "混合黑豆与牛油果", "挤入青柠汁后装盘"]
+    }, language);
   }
-  return {
+  return normalizeRecipeResponse({
     suggestion: "Quinoa & Black Bean Bowl (Mock)",
     reasoning: "High in protein and iron to address your recent deficiencies.",
     ingredients: ["Quinoa", "Black Beans", "Avocado", "Lime"],
-    nutrients: { protein: "20g", calories: "450kcal" }
+    nutrients: { protein: "20g", calories: "450kcal" },
+    prepTime: "20 min",
+    steps: ["Cook quinoa", "Mix with black beans and avocado", "Finish with lime juice"]
+  }, language);
+};
+
+const normalizeRecipeResponse = (data, language = 'zh') => {
+  const isZh = language?.startsWith('zh');
+  const fallbackSteps = isZh
+    ? ["准备食材", "按喜好烹调", "装盘享用"]
+    : ["Prepare ingredients", "Cook with your preferred method", "Plate and enjoy"];
+
+  return {
+    suggestion: data?.suggestion || (isZh ? "营养餐推荐" : "Nutritious meal suggestion"),
+    reasoning: data?.reasoning || (isZh ? "根据你的状态生成的均衡餐建议。" : "A balanced meal suggestion generated for your current state."),
+    ingredients: Array.isArray(data?.ingredients) ? data.ingredients : [],
+    nutrients: {
+      protein: data?.nutrients?.protein || "0g",
+      calories: data?.nutrients?.calories || "0kcal",
+    },
+    prepTime: data?.prepTime || data?.prep_time || (isZh ? "约20分钟" : "About 20 min"),
+    steps: Array.isArray(data?.steps)
+      ? data.steps
+      : Array.isArray(data?.step_by_step)
+        ? data.step_by_step
+        : fallbackSteps,
   };
 };

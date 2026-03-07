@@ -88,8 +88,45 @@ export const useUserStore = create(
         set((state) => ({
           dailyMeals: state.dailyMeals.filter((m) => m.id !== mealId)
         }));
+        
+        // Sync delete to Supabase
+        const userId = getUserId(get());
+        if (userId === 'anon') return;
+        
+        const { error } = await supabase
+          .from('meals')
+          .delete()
+          .eq('id', mealId);
+          
+        if (error) console.error('Supabase meal delete error:', error);
       },
       
+      updateMeal: async (mealId, updates) => {
+        // Optimistic update
+        set((state) => ({
+          dailyMeals: state.dailyMeals.map((m) => 
+            m.id === mealId ? { ...m, ...updates } : m
+          )
+        }));
+        
+        // Sync to Supabase
+        const userId = getUserId(get());
+        if (userId === 'anon') return;
+        
+        const { error } = await supabase
+          .from('meals')
+          .update({
+            name: updates.name,
+            calories: updates.calories,
+            protein: updates.protein,
+            nutrients: updates.nutrients,
+            eaten_at: updates.timestamp
+          })
+          .eq('id', mealId);
+          
+        if (error) console.error('Supabase meal update error:', error);
+      },
+
       clearHistory: () => set({ dailyMeals: [] }),
 
       // Initialize/Fetch from Supabase
@@ -131,6 +168,12 @@ export const useUserStore = create(
               name: m.name,
               calories: m.calories,
               protein: m.protein,
+              // Map all other nutrients from the 'nutrients' JSON column
+              calcium: m.nutrients?.calcium || 0,
+              iron: m.nutrients?.iron || 0,
+              folate: m.nutrients?.folate || 0,
+              vitaminD: m.nutrients?.vitaminD || 0,
+              nutrients: m.nutrients || {},
               timestamp: m.eaten_at
             }))
           });

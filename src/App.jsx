@@ -21,7 +21,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-background-light dark:bg-background-dark pb-20 transition-colors duration-200">
+      <div className="min-h-screen bg-background-light dark:bg-background-dark pb-nav-safe transition-colors duration-200">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/recipe" element={<Recipe />} />

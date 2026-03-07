@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../store/userStore';
 import BottomNav from '../components/BottomNav';
+import { useHeaderMotion } from '../lib/useHeaderMotion';
+import html2canvas from 'html2canvas';
 
 const Recipe = () => {
   const { t } = useTranslation();
@@ -10,6 +12,9 @@ const Recipe = () => {
   const location = useLocation();
   const { recipe } = location.state || {};
   const { addMeal } = useUserStore();
+  const { isHeaderCompact, isHeaderHidden } = useHeaderMotion({ compactAt: 48, hideAt: 180 });
+  const stitchCardRef = useRef(null);
+  const [sharing, setSharing] = useState(false);
 
   // If no recipe data (e.g. direct access), redirect or show empty state
   if (!recipe) {
@@ -25,22 +30,56 @@ const Recipe = () => {
   }
 
   const handleCheckIn = () => {
-    // Add meal to history
     addMeal({
       name: recipe.suggestion,
-      ...recipe.nutrients, // Assuming nutrients has protein, calories, etc.
-      // Parse strings to numbers if needed, but for now we keep it simple
+      ...recipe.nutrients,
       protein: parseInt(recipe.nutrients.protein) || 0,
       calories: parseInt(recipe.nutrients.calories) || 0,
     });
-    
-    // Navigate to History
     navigate('/history');
   };
 
+  const handleExportStitchCard = async () => {
+    if (!stitchCardRef.current || sharing) return;
+    setSharing(true);
+    try {
+      const canvas = await html2canvas(stitchCardRef.current, { scale: 2, backgroundColor: null });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `stitch-${Date.now()}.png`;
+      link.click();
+    } finally {
+      setSharing(false);
+    }
+  };
+
   return (
-    <div className="bg-background-light dark:bg-background-dark font-display min-h-screen pb-24 transition-colors duration-200">
-      {/* Header */}
+    <div className="surface-page font-display min-h-screen pb-24 transition-colors duration-200">
+      <header
+        className={`surface-nav sticky top-0 z-30 flex items-center justify-between px-4 border-b transition-[transform,padding,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${isHeaderCompact ? 'shadow-sm' : ''}`}
+        style={{
+          paddingTop: `calc(env(safe-area-inset-top, 0px) + ${isHeaderCompact ? '0.4rem' : '0.8rem'})`,
+          paddingBottom: isHeaderCompact ? '0.4rem' : '0.5rem',
+          transform: isHeaderHidden ? 'translateY(-100%)' : 'translateY(0)',
+          opacity: isHeaderHidden ? 0.98 : 1,
+          willChange: 'transform'
+        }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className={`surface-card rounded-full flex items-center justify-center border transition-all duration-300 ${isHeaderCompact ? 'size-9' : 'size-10'}`}
+        >
+          <span className={`material-symbols-outlined text-deep-charcoal dark:text-off-white transition-all duration-300 ${isHeaderCompact ? 'text-[20px]' : 'text-[22px]'}`}>arrow_back</span>
+        </button>
+        <div className="mx-3 flex-1 overflow-hidden">
+          <p className={`truncate text-center font-bold text-deep-charcoal dark:text-off-white transition-all duration-300 ${isHeaderCompact ? 'opacity-100 text-sm' : 'opacity-0 text-xs'}`}>
+            {recipe.suggestion}
+          </p>
+        </div>
+        <div className={`rounded-full transition-all duration-300 ${isHeaderCompact ? 'size-9' : 'size-10'}`}></div>
+      </header>
+
       <div className="relative h-64 bg-gray-200 dark:bg-gray-800 transition-colors">
         <img 
           src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
@@ -51,17 +90,10 @@ const Recipe = () => {
           <span className="bg-primary px-3 py-1 rounded-full text-xs font-bold w-fit mb-2">{t('recipe_ai_suggestion')}</span>
           <h1 className="text-3xl font-bold leading-tight">{recipe.suggestion}</h1>
         </div>
-        <button 
-          onClick={() => navigate(-1)} 
-          className="absolute top-4 left-4 size-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Reasoning Card */}
-        <div className="bg-white dark:bg-deep-charcoal p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden transition-colors">
+        <div className="surface-card p-5 rounded-2xl border shadow-sm relative overflow-hidden transition-colors">
           <div className="absolute top-0 right-0 p-3 opacity-10">
             <span className="material-symbols-outlined text-6xl text-primary">psychology</span>
           </div>
@@ -74,7 +106,6 @@ const Recipe = () => {
           </p>
         </div>
 
-        {/* Nutrients */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-2xl border border-orange-100 dark:border-orange-900/30 transition-colors">
             <span className="text-xs text-orange-600 dark:text-orange-400 font-bold uppercase tracking-wider transition-colors">{t('recipe_protein')}</span>
@@ -86,22 +117,58 @@ const Recipe = () => {
           </div>
         </div>
 
-        {/* Ingredients */}
         <div>
           <h3 className="font-bold text-lg mb-3 dark:text-off-white">{t('recipe_ingredients')}</h3>
           <ul className="space-y-2">
             {recipe.ingredients?.map((ing, i) => (
-              <li key={i} className="flex items-center gap-3 p-3 bg-white dark:bg-deep-charcoal rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
+              <li key={i} className="surface-card flex items-center gap-3 p-3 rounded-xl border transition-colors">
                 <div className="size-2 rounded-full bg-primary/40"></div>
                 <span className="font-medium text-gray-700 dark:text-gray-300">{ing}</span>
               </li>
             )) || <p className="text-gray-400 dark:text-gray-500 italic">{t('recipe_no_ingredients')}</p>}
           </ul>
         </div>
+
+        <div className="surface-card p-5 rounded-2xl border shadow-sm transition-colors">
+          <h3 className="font-bold text-lg mb-3 dark:text-off-white">{t('recipe_prep_time')}</h3>
+          <p className="text-sm font-semibold text-primary">{recipe.prepTime || t('recipe_prep_time_fallback')}</p>
+        </div>
+
+        <div className="surface-card p-5 rounded-2xl border shadow-sm transition-colors">
+          <h3 className="font-bold text-lg mb-3 dark:text-off-white">{t('recipe_steps')}</h3>
+          <ol className="space-y-2">
+            {(recipe.steps || []).map((step, index) => (
+              <li key={`${step}-${index}`} className="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <span className="size-6 rounded-full bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                  {index + 1}
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div ref={stitchCardRef} className="rounded-3xl overflow-hidden border shadow-lg bg-gradient-to-br from-primary/90 to-orange-400 text-white p-6">
+          <p className="text-[10px] uppercase tracking-widest font-bold opacity-80">{t('recipe_stitch_badge')}</p>
+          <h3 className="text-2xl font-bold mt-2 leading-tight">{recipe.suggestion}</h3>
+          <p className="text-sm mt-2 opacity-90">{recipe.reasoning}</p>
+          <div className="mt-4 flex gap-3 text-xs font-semibold">
+            <span className="bg-white/20 px-3 py-1 rounded-full">{t('recipe_protein')}: {recipe.nutrients.protein}</span>
+            <span className="bg-white/20 px-3 py-1 rounded-full">{t('recipe_calories')}: {recipe.nutrients.calories}</span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleExportStitchCard}
+          disabled={sharing}
+          className="w-full flex items-center justify-center gap-2 surface-card border py-3 rounded-2xl font-bold text-deep-charcoal dark:text-off-white active:scale-[0.98] transition-all disabled:opacity-70"
+        >
+          <span className="material-symbols-outlined text-primary">{sharing ? 'hourglass_top' : 'download'}</span>
+          <span>{sharing ? t('recipe_exporting') : t('recipe_export_stitch')}</span>
+        </button>
       </div>
 
-      {/* Action Button */}
-      <div className="fixed bottom-24 left-0 right-0 px-6 max-w-md mx-auto z-40">
+      <div className="fixed bottom-safe-24 left-0 right-0 px-6 max-w-md mx-auto z-40">
         <button
           onClick={handleCheckIn}
           className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-2xl shadow-lg shadow-primary/30 font-bold active:scale-[0.98] transition-all"

@@ -5,11 +5,13 @@ import { useUserStore } from '../store/userStore';
 import { supabase } from '../lib/supabase';
 import Auth from '../components/Auth';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useHeaderMotion } from '../lib/useHeaderMotion';
 
 const Profile = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, setUser, signOut, isDarkMode, toggleDarkMode } = useUserStore();
+  const { isHeaderCompact, isHeaderHidden } = useHeaderMotion({ hideAt: 90 });
 
   useEffect(() => {
     // Check initial session
@@ -29,17 +31,26 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-white pb-20 text-deep-charcoal transition-colors duration-200 dark:bg-background-dark dark:text-off-white">
-         <header className="flex items-center justify-between px-6 pt-6 pb-3">
-          <div className="w-10 h-10 flex items-center justify-start">
+      <div className="surface-page min-h-screen pb-20 text-deep-charcoal transition-colors duration-200 dark:text-off-white">
+         <header
+          className={`surface-nav sticky top-0 z-30 flex items-center justify-between px-6 border-b transition-[transform,padding,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${isHeaderCompact ? 'shadow-sm' : ''}`}
+          style={{
+            paddingTop: `calc(env(safe-area-inset-top, 0px) + ${isHeaderCompact ? '0.5rem' : '1.5rem'})`,
+            paddingBottom: isHeaderCompact ? '0.5rem' : '0.75rem',
+            transform: isHeaderHidden ? 'translateY(-100%)' : 'translateY(0)',
+            opacity: isHeaderHidden ? 0.98 : 1,
+            willChange: 'transform'
+          }}
+        >
+          <div className={`flex items-center justify-start transition-all duration-300 ${isHeaderCompact ? 'w-9 h-9' : 'w-10 h-10'}`}>
             <button onClick={() => navigate(-1)} className="text-dark-grey transition-colors hover:text-deep-charcoal dark:text-gray-400 dark:hover:text-off-white">
-              <span className="material-symbols-outlined text-[28px]">chevron_left</span>
+              <span className={`material-symbols-outlined transition-all duration-300 ${isHeaderCompact ? 'text-[24px]' : 'text-[28px]'}`}>chevron_left</span>
             </button>
           </div>
-          <h1 className="text-lg font-bold tracking-tight text-deep-charcoal dark:text-off-white">{t('profile_account')}</h1>
-          <div className="flex items-center justify-end gap-3">
+          <h1 className={`font-bold tracking-tight text-deep-charcoal dark:text-off-white transition-all duration-300 ${isHeaderCompact ? 'text-base' : 'text-lg'}`}>{t('profile_account')}</h1>
+          <div className={`flex items-center justify-end transition-all duration-300 ${isHeaderCompact ? 'gap-2' : 'gap-3'}`}>
             <button onClick={toggleDarkMode} className="text-primary hover:text-primary-alt transition-colors" title={isDarkMode ? t('profile_switch_to_light_mode') : t('profile_switch_to_dark_mode')}>
-              <span className="material-symbols-outlined text-[24px]">
+              <span className={`material-symbols-outlined transition-all duration-300 ${isHeaderCompact ? 'text-[20px]' : 'text-[24px]'}`}>
                 {isDarkMode ? 'light_mode' : 'dark_mode'}
               </span>
             </button>
@@ -52,23 +63,32 @@ const Profile = () => {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-white pb-32 text-deep-charcoal transition-colors duration-200 dark:bg-background-dark dark:text-off-white">
-        <header className="flex items-center justify-between px-6 pt-6 pb-3">
-          <div className="w-10 h-10 flex items-center justify-start">
+    <div className="surface-page relative min-h-screen w-full pb-32 text-deep-charcoal transition-colors duration-200 dark:text-off-white">
+        <header
+          className={`surface-nav sticky top-0 z-30 flex items-center justify-between px-6 border-b transition-[transform,padding,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${isHeaderCompact ? 'shadow-sm' : ''}`}
+          style={{
+            paddingTop: `calc(env(safe-area-inset-top, 0px) + ${isHeaderCompact ? '0.5rem' : '1.5rem'})`,
+            paddingBottom: isHeaderCompact ? '0.5rem' : '0.75rem',
+            transform: isHeaderHidden ? 'translateY(-100%)' : 'translateY(0)',
+            opacity: isHeaderHidden ? 0.98 : 1,
+            willChange: 'transform'
+          }}
+        >
+          <div className={`flex items-center justify-start transition-all duration-300 ${isHeaderCompact ? 'w-9 h-9' : 'w-10 h-10'}`}>
             <button onClick={() => navigate(-1)} className="text-dark-grey transition-colors hover:text-deep-charcoal dark:text-gray-400 dark:hover:text-off-white">
-              <span className="material-symbols-outlined text-[28px]">chevron_left</span>
+              <span className={`material-symbols-outlined transition-all duration-300 ${isHeaderCompact ? 'text-[24px]' : 'text-[28px]'}`}>chevron_left</span>
             </button>
           </div>
-          <h1 className="text-lg font-bold tracking-tight text-deep-charcoal dark:text-off-white">{t('profile_my_profile')}</h1>
-          <div className="flex items-center justify-end gap-3">
+          <h1 className={`font-bold tracking-tight text-deep-charcoal dark:text-off-white transition-all duration-300 ${isHeaderCompact ? 'text-base' : 'text-lg'}`}>{t('profile_my_profile')}</h1>
+          <div className={`flex items-center justify-end transition-all duration-300 ${isHeaderCompact ? 'gap-2' : 'gap-3'}`}>
             <button onClick={toggleDarkMode} className="text-primary hover:text-primary-alt transition-colors" title={isDarkMode ? t('profile_switch_to_light_mode') : t('profile_switch_to_dark_mode')}>
-              <span className="material-symbols-outlined text-[24px]">
+              <span className={`material-symbols-outlined transition-all duration-300 ${isHeaderCompact ? 'text-[20px]' : 'text-[24px]'}`}>
                 {isDarkMode ? 'light_mode' : 'dark_mode'}
               </span>
             </button>
             <LanguageSwitcher />
             <button onClick={signOut} className="text-primary hover:text-primary-alt transition-colors" title={t('profile_sign_out')}>
-              <span className="material-symbols-outlined text-[24px]">logout</span>
+              <span className={`material-symbols-outlined transition-all duration-300 ${isHeaderCompact ? 'text-[20px]' : 'text-[24px]'}`}>logout</span>
             </button>
           </div>
         </header>

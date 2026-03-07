@@ -18,28 +18,72 @@ export const RDA_DATA = {
 };
 
 /**
+ * Filters meals based on a time window.
+ * @param {Array} history - The full meal history.
+ * @param {String} timeWindow - 'today' or 'week'.
+ * @returns {Array} Filtered meals.
+ */
+export const filterMealsByWindow = (history, timeWindow = 'today', targetDate = new Date()) => {
+  if (!Array.isArray(history)) return [];
+  
+  const now = targetDate || new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const endOfDay = startOfDay + 86400000;
+  
+  if (timeWindow === 'today' || timeWindow === 'date') {
+    return history.filter(meal => {
+      const t = new Date(meal.timestamp).getTime();
+      return t >= startOfDay && t < endOfDay;
+    });
+  } else if (timeWindow === 'week') {
+    const today = new Date();
+    const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6).getTime(); // Last 7 days including today
+    return history.filter(meal => new Date(meal.timestamp).getTime() >= startOfWeek);
+  }
+  return history;
+};
+
+/**
  * Calculates the percentage deviation of current intake from recommended values.
- * @param {Object} history - The user's meal history (aggregated for the period).
+ * @param {Array} history - The user's meal history.
  * @param {Object} userProfile - The user's profile containing lifeStage.
+ * @param {String} timeWindow - 'today', 'week', or 'date'.
+ * @param {Date} targetDate - The specific date to calculate for (if timeWindow is 'date').
  * @returns {Object} Deviation percentages for each nutrient.
  */
-export const calculateNutrientDeviation = (history, userProfile) => {
+export const calculateNutrientDeviation = (history, userProfile, timeWindow = 'today', targetDate = new Date()) => {
   const { lifeStage } = userProfile;
   const target = RDA_DATA[lifeStage] || RDA_DATA.adult;
 
-  // Aggregate current intake from history (assuming history is an array of meals with nutrient data)
-  // For simplicity, we'll assume 'history' object contains the total intake values directly or we sum them up here.
-  // If history is an array of meals:
-  const currentIntake = Array.isArray(history) 
-    ? history.reduce((acc, meal) => ({
-        protein: acc.protein + (meal.protein || 0),
-        calcium: acc.calcium + (meal.calcium || 0),
-        iron: acc.iron + (meal.iron || 0),
-        folate: acc.folate + (meal.folate || 0),
-        vitaminD: acc.vitaminD + (meal.vitaminD || 0),
-        calories: acc.calories + (meal.calories || 0),
-      }), { protein: 0, calcium: 0, iron: 0, folate: 0, vitaminD: 0, calories: 0 })
-    : history; // If history is already aggregated
+  // Filter meals based on the time window
+  const filteredMeals = filterMealsByWindow(history, timeWindow, targetDate);
+  
+  // Calculate aggregate intake
+  const totalIntake = filteredMeals.reduce((acc, meal) => ({
+    protein: acc.protein + (Number(meal.protein) || 0),
+    calcium: acc.calcium + (Number(meal.calcium) || 0),
+    iron: acc.iron + (Number(meal.iron) || 0),
+    folate: acc.folate + (Number(meal.folate) || 0),
+    vitaminD: acc.vitaminD + (Number(meal.vitaminD) || 0),
+    calories: acc.calories + (Number(meal.calories) || 0),
+  }), { protein: 0, calcium: 0, iron: 0, folate: 0, vitaminD: 0, calories: 0 });
+
+  // For 'week', we compare the DAILY AVERAGE against the DAILY TARGET
+  // If no meals in the window, average is 0. If there are meals, we divide by the number of days represented?
+  // Actually, for a "Check-in" app, users might want to know "How am I doing on average over the last 7 days?".
+  // A simple way is: Sum of Last 7 Days / 7. Even if they missed a day, it counts as 0 intake, lowering the average.
+  // This encourages consistent logging.
+  
+  const divisor = timeWindow === 'week' ? 7 : 1; 
+  
+  const currentIntake = {
+    protein: totalIntake.protein / divisor,
+    calcium: totalIntake.calcium / divisor,
+    iron: totalIntake.iron / divisor,
+    folate: totalIntake.folate / divisor,
+    vitaminD: totalIntake.vitaminD / divisor,
+    calories: totalIntake.calories / divisor,
+  };
 
   const deviation = {};
   for (const nutrient in target) {
@@ -48,7 +92,6 @@ export const calculateNutrientDeviation = (history, userProfile) => {
     const currentValue = currentIntake[nutrient] || 0;
     
     // Calculate percentage deviation: (current - target) / target * 100
-    // A value of 0 means exact match. -50 means 50% under. +50 means 50% over.
     deviation[nutrient] = targetValue > 0 
       ? ((currentValue - targetValue) / targetValue) * 100 
       : 0;

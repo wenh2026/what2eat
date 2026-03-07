@@ -4,6 +4,7 @@ import { RDA_DATA } from '../logic/dietaryGuidelines';
 import { generatePrompt, callAI } from '../services/aiService';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useHeaderMotion } from '../lib/useHeaderMotion';
 
 const Vibe = () => {
   const { t, i18n } = useTranslation();
@@ -11,8 +12,10 @@ const Vibe = () => {
   const [mood, setMood] = useState(userProfile.currentMood || 50);
   const [selectedLifeStage, setSelectedLifeStage] = useState(userProfile.lifeStage || 'adult');
   const [dietaryIntents, setDietaryIntents] = useState(userProfile.dietaryIntents || []);
+  const [weather, setWeather] = useState('mild');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { isHeaderCompact, isHeaderHidden } = useHeaderMotion({ hideAt: 100 });
 
   // Sync store with local state on mount
   useEffect(() => {
@@ -32,6 +35,8 @@ const Vibe = () => {
   const handleRefineSelection = async () => {
     setLoading(true);
     const outputLanguage = i18n.language?.startsWith('zh') ? 'zh' : 'en';
+    const currentHour = new Date().getHours();
+    const mealMoment = currentHour < 11 ? 'breakfast' : currentHour < 16 ? 'lunch' : 'dinner';
     // 1. Update store
     updateUserProfile({
       currentMood: mood,
@@ -45,7 +50,7 @@ const Vibe = () => {
       currentMood: mood,
       lifeStage: selectedLifeStage,
       dietaryIntents,
-    }, dailyMeals, outputLanguage);
+    }, dailyMeals, outputLanguage, { mealMoment, weather });
 
     console.log('Generated Prompt:', prompt);
 
@@ -72,11 +77,20 @@ const Vibe = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark p-6 pb-24 font-display text-deep-charcoal dark:text-off-white transition-colors duration-200">
-      <header className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">{t('vibe_title')}</h1>
-        <div className="size-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary transition-colors">
-          <span className="material-symbols-outlined">auto_awesome</span>
+    <div className="surface-page min-h-screen p-6 pb-24 font-display text-deep-charcoal dark:text-off-white transition-colors duration-200">
+      <header
+        className={`surface-nav sticky top-0 z-30 flex items-center justify-between -mx-6 px-6 mb-8 border-b transition-[transform,padding,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${isHeaderCompact ? 'shadow-sm' : ''}`}
+        style={{
+          paddingTop: `calc(env(safe-area-inset-top, 0px) + ${isHeaderCompact ? '0.5rem' : '1.5rem'})`,
+          paddingBottom: isHeaderCompact ? '0.65rem' : '1rem',
+          transform: isHeaderHidden ? 'translateY(-100%)' : 'translateY(0)',
+          opacity: isHeaderHidden ? 0.98 : 1,
+          willChange: 'transform'
+        }}
+      >
+        <h1 className={`font-bold transition-all duration-300 ${isHeaderCompact ? 'text-xl' : 'text-2xl'}`}>{t('vibe_title')}</h1>
+        <div className={`rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary transition-all duration-300 ${isHeaderCompact ? 'size-9' : 'size-10'}`}>
+          <span className={`material-symbols-outlined transition-all duration-300 ${isHeaderCompact ? 'text-[20px]' : 'text-[24px]'}`}>auto_awesome</span>
         </div>
       </header>
 
@@ -111,7 +125,7 @@ const Vibe = () => {
               className={`p-3 rounded-2xl border flex flex-col items-center gap-2 transition-all ${
                 selectedLifeStage === key
                   ? 'bg-primary/10 dark:bg-primary/20 border-primary text-primary shadow-sm'
-                  : 'bg-white dark:bg-deep-charcoal border-gray-100 dark:border-gray-700 text-gray-400 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  : 'surface-card border text-muted-ui hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
               <span className="material-symbols-outlined text-2xl">
@@ -147,8 +161,8 @@ const Vibe = () => {
               onClick={() => handleIntentToggle(intent.id)}
               className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
                 dietaryIntents.includes(intent.id)
-                  ? 'bg-white dark:bg-deep-charcoal border-primary shadow-sm ring-1 ring-primary/20'
-                  : 'bg-white dark:bg-deep-charcoal border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'surface-card border-primary shadow-sm ring-1 ring-primary/20'
+                  : 'surface-card border hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -167,8 +181,32 @@ const Vibe = () => {
         </div>
       </section>
 
+      <section className="mb-28">
+        <h2 className="text-lg font-bold mb-4">{t('vibe_weather_title')}</h2>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { id: 'hot', label: t('vibe_weather_hot'), icon: 'light_mode' },
+            { id: 'mild', label: t('vibe_weather_mild'), icon: 'partly_cloudy_day' },
+            { id: 'cold', label: t('vibe_weather_cold'), icon: 'ac_unit' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setWeather(item.id)}
+              className={`p-3 rounded-2xl border flex flex-col items-center gap-2 transition-all ${
+                weather === item.id
+                  ? 'bg-primary/10 dark:bg-primary/20 border-primary text-primary shadow-sm'
+                  : 'surface-card border text-muted-ui hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              <span className="material-symbols-outlined text-2xl">{item.icon}</span>
+              <span className="text-xs font-semibold">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* Refine Button */}
-      <div className="fixed bottom-24 left-0 right-0 px-6 max-w-md mx-auto z-40">
+      <div className="fixed bottom-safe-24 left-0 right-0 px-6 max-w-md mx-auto z-40">
         <button
           onClick={handleRefineSelection}
           disabled={loading}
