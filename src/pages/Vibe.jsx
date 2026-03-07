@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUserStore } from '../store/userStore';
 import { RDA_DATA } from '../logic/dietaryGuidelines';
 import { generatePrompt, callAI } from '../services/aiService';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useHeaderMotion } from '../lib/useHeaderMotion';
 
@@ -12,9 +12,13 @@ const Vibe = () => {
   const [mood, setMood] = useState(userProfile.currentMood || 50);
   const [selectedLifeStage, setSelectedLifeStage] = useState(userProfile.lifeStage || 'adult');
   const [dietaryIntents, setDietaryIntents] = useState(userProfile.dietaryIntents || []);
+  const [cravings, setCravings] = useState(userProfile.cravings || []);
   const [weather, setWeather] = useState('mild');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const [presetApplied, setPresetApplied] = useState(false);
   const { isHeaderCompact, isHeaderHidden } = useHeaderMotion({ hideAt: 100 });
 
   // Sync store with local state on mount
@@ -22,7 +26,21 @@ const Vibe = () => {
     setMood(userProfile.currentMood);
     setSelectedLifeStage(userProfile.lifeStage);
     setDietaryIntents(userProfile.dietaryIntents || []);
+    setCravings(userProfile.cravings || []);
   }, [userProfile]);
+
+  useEffect(() => {
+    const preset = location.state?.preset;
+    if (!preset || presetApplied) return;
+
+    if (Array.isArray(preset.dietaryIntents) && preset.dietaryIntents.length > 0) {
+      setDietaryIntents((current) => Array.from(new Set([...(current || []), ...preset.dietaryIntents])));
+    }
+    if (Array.isArray(preset.cravings) && preset.cravings.length > 0) {
+      setCravings((current) => Array.from(new Set([...(current || []), ...preset.cravings])));
+    }
+    setPresetApplied(true);
+  }, [location.state, presetApplied]);
 
   const handleIntentToggle = (intent) => {
     if (dietaryIntents.includes(intent)) {
@@ -32,37 +50,56 @@ const Vibe = () => {
     }
   };
 
+  const handleCravingToggle = (craving) => {
+    if (cravings.includes(craving)) {
+      setCravings(cravings.filter((c) => c !== craving));
+    } else {
+      setCravings([...cravings, craving]);
+    }
+  };
+
   const handleRefineSelection = async () => {
     setLoading(true);
+    setErrorMessage('');
     const outputLanguage = i18n.language?.startsWith('zh') ? 'zh' : 'en';
     const currentHour = new Date().getHours();
     const mealMoment = currentHour < 11 ? 'breakfast' : currentHour < 16 ? 'lunch' : 'dinner';
-    // 1. Update store
-    updateUserProfile({
+
+    const profileResult = await updateUserProfile({
       currentMood: mood,
       lifeStage: selectedLifeStage,
       dietaryIntents,
+      cravings,
     });
+    if (!profileResult?.ok) {
+      setErrorMessage(t('vibe_profile_save_failed'));
+    }
 
-    // 2. Generate prompt
     const prompt = generatePrompt({
       ...userProfile,
       currentMood: mood,
       lifeStage: selectedLifeStage,
       dietaryIntents,
+      cravings,
     }, dailyMeals, outputLanguage, { mealMoment, weather });
 
-    console.log('Generated Prompt:', prompt);
-
-    // 3. Call AI
     try {
       const result = await callAI(prompt, outputLanguage);
-      console.log('AI Result:', result);
-      // Navigate to Recipe page with result
-      navigate('/recipe', { state: { recipe: result } });
-    } catch (error) {
-      console.error('AI Error:', error);
-      alert(t('vibe_generate_failed'));
+      navigate('/recipe', { 
+        state: { 
+          recipe: result,
+          generationParams: {
+            currentMood: mood,
+            lifeStage: selectedLifeStage,
+            dietaryIntents,
+            cravings,
+            weather,
+            mealMoment
+          }
+        } 
+      });
+    } catch {
+      setErrorMessage(t('vibe_generate_failed'));
     } finally {
       setLoading(false);
     }
@@ -147,6 +184,34 @@ const Vibe = () => {
         </div>
       </section>
 
+      {/* Cravings Selection */}
+      <section className="mb-8">
+        <h2 className="text-lg font-bold mb-4">{t('vibe_cravings_title')}</h2>
+        <div className="flex flex-wrap gap-3">
+          {[
+            { id: 'spicy', label: t('vibe_cravings_spicy'), icon: 'whatshot' },
+            { id: 'sweet', label: t('vibe_cravings_sweet'), icon: 'cake' },
+            { id: 'salty', label: t('vibe_cravings_salty'), icon: 'soup_kitchen' },
+            { id: 'comfort', label: t('vibe_cravings_comfort'), icon: 'favorite' },
+            { id: 'crunchy', label: t('vibe_cravings_crunchy'), icon: 'cookie' },
+            { id: 'fresh', label: t('vibe_cravings_fresh'), icon: 'local_florist' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleCravingToggle(item.id)}
+              className={`px-4 py-2 rounded-full border flex items-center gap-2 transition-all ${
+                cravings.includes(item.id)
+                  ? 'bg-primary text-white border-primary shadow-md'
+                  : 'surface-card border text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">{item.icon}</span>
+              <span className="text-sm font-medium">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* Dietary Intents */}
       <section className="mb-24">
         <h2 className="text-lg font-bold mb-4">{t('vibe_dietary_goals')}</h2>
@@ -205,7 +270,12 @@ const Vibe = () => {
         </div>
       </section>
 
-      {/* Refine Button */}
+      {errorMessage ? (
+        <div className="mb-24 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+          {errorMessage}
+        </div>
+      ) : null}
+
       <div className="fixed bottom-safe-24 left-0 right-0 px-6 max-w-md mx-auto z-40">
         <button
           onClick={handleRefineSelection}

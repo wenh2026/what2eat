@@ -1,22 +1,37 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../store/userStore';
+import { logEvent, logError } from '../lib/logger';
 
 const Auth = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false); // Toggle between Login and Sign Up
+  const [isSignUp, setIsSignUp] = useState(false);
   const [message, setMessage] = useState('');
-
+  const [messageType, setMessageType] = useState('error');
   const { hydrateFromSupabase } = useUserStore();
+  const redirectTo = location.state?.from || '/history';
+  const resolveAuthErrorMessage = (error) => {
+    if (error?.code === 'invalid_credentials' || error?.code === 'invalid_grant') {
+      return t('auth_invalid_credentials');
+    }
+    if (error?.code === 'over_email_send_rate_limit') {
+      return t('auth_rate_limited');
+    }
+    return error?.message || t('auth_generic_failed');
+  };
 
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
+    setMessageType('error');
 
     try {
       if (isSignUp) {
@@ -25,19 +40,35 @@ const Auth = () => {
           password,
         });
         if (error) throw error;
+        logEvent('auth_sign_up_success', { scene: 'auth_form', status: 'success', email });
         setMessage(t('auth_sign_up_success'));
+        setMessageType('success');
+        setPassword('');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-        // Successful login will be caught by the onAuthStateChange listener in App or Profile, 
-        // but we can also trigger hydration here.
-        await hydrateFromSupabase();
+        const hydrateResult = await hydrateFromSupabase();
+        if (!hydrateResult?.ok) {
+          setMessage(t('auth_sync_failed'));
+          setMessageType('error');
+          logEvent('auth_sign_in_fail', {
+            scene: 'auth_form',
+            status: 'fail',
+            email,
+            error_code: hydrateResult?.errorCode || 'HYDRATE_FAILED',
+          });
+          return;
+        }
+        logEvent('auth_sign_in_success', { scene: 'auth_form', status: 'success', email });
+        navigate(redirectTo, { replace: true });
       }
     } catch (error) {
-      setMessage(error.message);
+      logError('auth_sign_in_fail', error, { scene: 'auth_form', status: 'fail', email, error_code: error?.code || 'AUTH_FAILED' });
+      setMessage(resolveAuthErrorMessage(error));
+      setMessageType('error');
     } finally {
       setLoading(false);
     }
@@ -85,7 +116,7 @@ const Auth = () => {
           </div>
 
           {message && (
-            <div className={`rounded-xl p-3 text-sm ${message.includes('successful') ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+            <div className={`rounded-xl p-3 text-sm ${messageType === 'success' ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
               {message}
             </div>
           )}

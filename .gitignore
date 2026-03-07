@@ -26,6 +26,7 @@ dist/
 dist-ssr/
 build/
 coverage/
+out/
 
 # IDEs
 .vscode/
@@ -41,3 +42,7 @@ coverage/
 
 # Sensitive files
 aliAPIkey.txt
+
+# Local tooling
+.tools/
+PLAN.md

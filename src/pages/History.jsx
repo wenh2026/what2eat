@@ -91,7 +91,8 @@ const NutritionBall = ({ deviation, timeWindow }) => {
 };
 
 const WeeklyTrendChart = ({ dailyMeals }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith('zh') ? 'zh-CN' : 'en-US';
   
   const last7Days = useMemo(() => {
     const days = [];
@@ -117,12 +118,12 @@ const WeeklyTrendChart = ({ dailyMeals }) => {
         .reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
         
       return {
-        dayName: day.toLocaleDateString('en-US', { weekday: 'narrow' }), // M, T, W...
+        dayName: day.toLocaleDateString(locale, { weekday: 'narrow' }),
         calories: cals,
         date: day.getDate()
       };
     });
-  }, [dailyMeals, last7Days]);
+  }, [dailyMeals, last7Days, locale]);
 
   const maxCals = Math.max(...chartData.map(d => d.calories), 2000); // Minimum scale 2000 to avoid huge bars for small meals
 
@@ -157,9 +158,10 @@ const WeeklyTrendChart = ({ dailyMeals }) => {
   );
 };
 
-const CalendarView = ({ currentDate, onDateSelect, dailyMeals, userProfile }) => {
-  const { t } = useTranslation();
+const CalendarView = ({ currentDate, onDateSelect, dailyMeals }) => {
+  const { t, i18n } = useTranslation();
   const [viewDate, setViewDate] = useState(new Date(currentDate));
+  const locale = i18n.language?.startsWith('zh') ? 'zh-CN' : 'en-US';
 
   // Sync viewDate when currentDate changes
   React.useEffect(() => { setViewDate(new Date(currentDate)); }, [currentDate]);
@@ -202,7 +204,6 @@ const CalendarView = ({ currentDate, onDateSelect, dailyMeals, userProfile }) =>
     // Simplified score logic for the dot:
     // Just check calories and maybe protein balance roughly
     
-    const totalCals = mealsForDay.reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
     // Rough check: if calories are within 1200-2500 (very rough), it's okay? 
     // Or better, let's use the actual calculation if possible, or just color based on "logged" for now
     // Let's do a simple calorie check against a standard 2000 for now, 
@@ -244,13 +245,20 @@ const CalendarView = ({ currentDate, onDateSelect, dailyMeals, userProfile }) =>
     onDateSelect(today);
   };
 
-  const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const weekDays = useMemo(() => {
+    const base = new Date(2024, 0, 7);
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      return new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(d);
+    });
+  }, [locale]);
 
   return (
     <div className="surface-card rounded-3xl p-6 shadow-sm border mb-6 transition-colors">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold dark:text-off-white capitalize">
-          {viewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+          {new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(viewDate)}
         </h2>
         <div className="flex gap-2 items-center">
           <button 
@@ -269,8 +277,8 @@ const CalendarView = ({ currentDate, onDateSelect, dailyMeals, userProfile }) =>
       </div>
       
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
-        {weekDays.map(d => (
-          <div key={d} className="text-xs font-medium text-muted-ui">{d}</div>
+        {weekDays.map((d, index) => (
+          <div key={`${d}-${index}`} className="text-xs font-medium text-muted-ui">{d}</div>
         ))}
       </div>
       
@@ -314,6 +322,7 @@ const CalendarView = ({ currentDate, onDateSelect, dailyMeals, userProfile }) =>
 const MealItem = ({ meal, onDelete, onUpdate }) => {
   const { t, i18n } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editValues, setEditValues] = useState({
     name: meal.name,
     calories: meal.calories,
@@ -328,8 +337,10 @@ const MealItem = ({ meal, onDelete, onUpdate }) => {
     }).format(date);
   };
 
-  const handleSave = () => {
-    onUpdate(meal.id, {
+  const handleSave = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const result = await onUpdate(meal.id, {
       ...meal,
       name: editValues.name,
       calories: Number(editValues.calories),
@@ -340,7 +351,10 @@ const MealItem = ({ meal, onDelete, onUpdate }) => {
         protein: Number(editValues.protein)
       }
     });
-    setIsEditing(false);
+    setIsSubmitting(false);
+    if (result?.ok) {
+      setIsEditing(false);
+    }
   };
 
   if (isEditing) {
@@ -384,10 +398,11 @@ const MealItem = ({ meal, onDelete, onUpdate }) => {
           </button>
           <button 
             onClick={handleSave}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-primary hover:bg-primary-dark transition-colors flex items-center gap-1"
+            disabled={isSubmitting}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-primary hover:bg-primary-dark transition-colors flex items-center gap-1 disabled:opacity-70"
           >
             <Check size={14} />
-            {t('common_save', { defaultValue: 'Save' })}
+            {isSubmitting ? t('history_saving', { defaultValue: 'Saving...' }) : t('common_save', { defaultValue: 'Save' })}
           </button>
         </div>
       </div>
@@ -417,9 +432,9 @@ const MealItem = ({ meal, onDelete, onUpdate }) => {
             <Edit2 size={14} />
           </button>
           <button 
-            onClick={() => {
+            onClick={async () => {
               if(window.confirm(t('history_confirm_delete'))) {
-                onDelete(meal.id);
+                await onDelete(meal.id);
               }
             }}
             className="text-gray-400 hover:text-red-500 transition-colors"
@@ -439,6 +454,7 @@ const History = () => {
   const [timeWindow, setTimeWindow] = useState('today'); // 'today' | 'week'
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
   
   const deviation = useMemo(() => 
     calculateNutrientDeviation(dailyMeals, userProfile, showCalendar ? 'date' : timeWindow, selectedDate), 
@@ -452,12 +468,23 @@ const History = () => {
     return filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }, [dailyMeals, timeWindow, showCalendar, selectedDate]);
 
-  const formatDate = (isoString) => {
-    const date = new Date(isoString);
-    const locale = i18n.language?.startsWith('zh') ? 'zh-CN' : 'en-US';
-    return new Intl.DateTimeFormat(locale, {
-      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    }).format(date);
+  const handleDeleteMeal = async (mealId) => {
+    const result = await removeMeal(mealId);
+    if (result?.ok) {
+      setFeedback({ type: 'success', message: t('history_delete_success') });
+      return;
+    }
+    setFeedback({ type: 'error', message: t('history_delete_failed') });
+  };
+
+  const handleUpdateMeal = async (mealId, updates) => {
+    const result = await updateMeal(mealId, updates);
+    if (result?.ok) {
+      setFeedback({ type: 'success', message: t('history_update_success') });
+      return result;
+    }
+    setFeedback({ type: 'error', message: t('history_update_failed') });
+    return result;
   };
 
   return (
@@ -516,14 +543,22 @@ const History = () => {
         </div>
       )}
 
+      {feedback.message ? (
+        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
+          feedback.type === 'success'
+            ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/40 dark:bg-green-950/30 dark:text-green-300'
+            : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300'
+        }`}>
+          {feedback.message}
+        </div>
+      ) : null}
+
       {/* Visualization */}
       <section className="surface-card rounded-3xl p-6 shadow-sm border mb-6 transition-colors">
         <h2 className="text-lg font-bold mb-2 dark:text-off-white">
-          {showCalendar 
-             ? (i18n.language?.startsWith('zh') 
-                 ? `${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日 ` 
-                 : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} `) + t('history_nutrient_balance')
-             : t('history_nutrient_balance')
+          {showCalendar
+            ? `${new Intl.DateTimeFormat(i18n.language?.startsWith('zh') ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' }).format(selectedDate)} ${t('history_nutrient_balance')}`
+            : t('history_nutrient_balance')
           }
         </h2>
         <NutritionBall deviation={deviation} timeWindow={showCalendar ? 'date' : timeWindow} />
@@ -535,7 +570,6 @@ const History = () => {
           currentDate={selectedDate} 
           onDateSelect={setSelectedDate} 
           dailyMeals={dailyMeals}
-          userProfile={userProfile}
         />
       ) : (
         <WeeklyTrendChart dailyMeals={dailyMeals} />
@@ -559,7 +593,7 @@ const History = () => {
         <h2 className="text-lg font-bold dark:text-off-white">{t('history_recent_meals')}</h2>
         {sortedMeals.length === 0 ? (
            <div className="surface-card text-center py-10 text-muted-ui text-sm rounded-2xl border border-dashed transition-colors">
-            {timeWindow === 'today' ? t('history_no_meals_today') : t('history_no_meals_week')}
+            {showCalendar ? t('history_no_meals_selected_date') : (timeWindow === 'today' ? t('history_no_meals_today') : t('history_no_meals_week'))}
           </div>
         ) : (
           <div className="space-y-3">
@@ -567,8 +601,8 @@ const History = () => {
               <MealItem 
                 key={meal.id} 
                 meal={meal} 
-                onDelete={removeMeal}
-                onUpdate={updateMeal}
+                onDelete={handleDeleteMeal}
+                onUpdate={handleUpdateMeal}
               />
             ))}
           </div>

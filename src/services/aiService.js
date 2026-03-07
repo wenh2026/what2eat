@@ -3,6 +3,7 @@ import { RDA_DATA, calculateNutrientDeviation } from '../logic/dietaryGuidelines
 
 const API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
 const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+const USE_MOCK_RESPONSE = import.meta.env.VITE_AI_USE_MOCK === 'true';
 
 /**
  * Generates a prompt for the AI based on user profile and history.
@@ -12,7 +13,7 @@ const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completi
  * @returns {String} The generated prompt.
  */
 export const generatePrompt = (userProfile, history, language = 'zh', context = {}) => {
-  const { lifeStage, currentMood, dietaryIntents } = userProfile;
+  const { lifeStage, currentMood, dietaryIntents, cravings } = userProfile;
   const targetGroup = RDA_DATA[lifeStage] || RDA_DATA.adult;
   const responseLanguage = language?.startsWith('zh') ? 'Chinese (Simplified)' : 'English';
   const deviations = calculateNutrientDeviation(history, userProfile, 'today');
@@ -23,6 +24,10 @@ export const generatePrompt = (userProfile, history, language = 'zh', context = 
   const intentStr = dietaryIntents && dietaryIntents.length > 0 
     ? `Dietary Intents: ${dietaryIntents.join(', ')}` 
     : 'No specific dietary restrictions';
+
+  const cravingsStr = cravings && cravings.length > 0
+    ? `Cravings: ${cravings.join(', ')}`
+    : 'No specific cravings';
 
   const moodDesc = currentMood > 75 ? 'Ecstatic' : currentMood > 40 ? 'Neutral' : 'Stressed';
   const mealMoment = context.mealMoment || 'dinner';
@@ -35,6 +40,7 @@ export const generatePrompt = (userProfile, history, language = 'zh', context = 
     - Meal Moment: ${mealMoment}
     - Weather: ${weather}
     - ${intentStr}
+    - ${cravingsStr}
     
     Recent Nutritional Status (Deviation from RDA):
     ${deviationsStr}
@@ -64,43 +70,53 @@ export const generatePrompt = (userProfile, history, language = 'zh', context = 
  */
 export const callAI = async (prompt, language = 'zh') => {
   const responseLanguage = language?.startsWith('zh') ? 'Chinese (Simplified)' : 'English';
-  if (!API_KEY) {
-    console.warn('Missing API Key, using mock data');
+  if (USE_MOCK_RESPONSE) {
     return mockAIResponse(language);
+  }
+  if (!API_KEY) {
+    const error = new Error('Missing AI API key');
+    error.code = 'AI_KEY_MISSING';
+    throw error;
+  }
+
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'qwen-turbo',
+      messages: [
+        { role: 'system', content: `You are a helpful nutritionist assistant that outputs only JSON. The values of "suggestion", "reasoning", and "ingredients" must be in ${responseLanguage}.` },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7
+    })
+  });
+
+  if (!response.ok) {
+    const error = new Error(`API Error: ${response.statusText}`);
+    error.code = 'AI_REQUEST_FAILED';
+    throw error;
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+  
+  if (!content) {
+    const error = new Error('No content in response');
+    error.code = 'AI_EMPTY_RESPONSE';
+    throw error;
   }
 
   try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'qwen-turbo',
-        messages: [
-          { role: 'system', content: `You are a helpful nutritionist assistant that outputs only JSON. The values of "suggestion", "reasoning", and "ingredients" must be in ${responseLanguage}.` },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    
-    if (!content) throw new Error('No content in response');
-
     const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
     return normalizeRecipeResponse(JSON.parse(cleanContent), language);
-
-  } catch (error) {
-    console.error('AI Service Error:', error);
-    return mockAIResponse(language);
+  } catch {
+    const error = new Error('Invalid JSON response');
+    error.code = 'AI_INVALID_JSON';
+    throw error;
   }
 };
 
