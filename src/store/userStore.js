@@ -85,19 +85,28 @@ const toNutrientsFromMeal = (meal) => {
   };
 };
 
-const mapMealRow = (meal) => ({
+const isMissingRelationError = (error) => error?.code === '42P01';
+
+const isMissingColumnError = (error) => error?.code === '42703';
+
+const isPermissionError = (error) => error?.code === '42501';
+
+const isNonFatalSyncError = (error) =>
+  isMissingRelationError(error) || isMissingColumnError(error) || isPermissionError(error);
+
+const mapMealRow = (meal, fallbackTimestamp) => ({
   id: meal.id,
   clientId: meal.client_id || null,
   name: meal.name || meal.dish_name || meal.notes || 'Meal',
   calories: toNumber(meal.calories),
   protein: toNumber(meal.protein),
-  calcium: toNumber(meal.nutrients?.calcium),
-  iron: toNumber(meal.nutrients?.iron),
-  folate: toNumber(meal.nutrients?.folate),
-  vitaminD: toNumber(meal.nutrients?.vitaminD),
+  calcium: toNumber(meal.nutrients?.calcium ?? meal.calcium),
+  iron: toNumber(meal.nutrients?.iron ?? meal.iron),
+  folate: toNumber(meal.nutrients?.folate ?? meal.folate),
+  vitaminD: toNumber(meal.nutrients?.vitaminD ?? meal.vitaminD),
   nutrients: meal.nutrients || {},
   recipe: meal.recipe || {},
-  timestamp: meal.eaten_at,
+  timestamp: meal.eaten_at || meal.timestamp || meal.logged_at || meal.created_at || fallbackTimestamp || new Date().toISOString(),
   synced: true,
 });
 
@@ -149,6 +158,38 @@ const mapMealToDbInsert = (meal, userId) => ({
   client_id: meal.clientId,
 });
 
+const mapMealToLegacyDbInsert = (meal, userId) => ({
+  user_id: userId,
+  name: meal.name,
+  calories: toNumber(meal.calories),
+  protein: toNumber(meal.protein),
+  nutrients: meal.nutrients || {},
+  eaten_at: meal.timestamp,
+});
+
+const mergeMealsPreferLocal = (remoteMeals, localMeals) => {
+  const merged = [];
+  const seen = new Set();
+  const makeKey = (meal) =>
+    meal?.clientId || meal?.client_id || (meal?.id ? `id:${meal.id}` : `ts:${meal?.timestamp || meal?.eaten_at || Date.now()}`);
+
+  (Array.isArray(localMeals) ? localMeals : []).forEach((meal) => {
+    const key = makeKey(meal);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(meal);
+  });
+
+  (Array.isArray(remoteMeals) ? remoteMeals : []).forEach((meal) => {
+    const key = makeKey(meal);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(meal);
+  });
+
+  return merged.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+};
+
 export const useUserStore = create(
   persist(
     (set, get) => ({
@@ -188,7 +229,6 @@ export const useUserStore = create(
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
       updateUserProfile: async (updates) => {
         const userId = getUserId(get());
-        const previousProfile = get().userProfile;
 
         set((state) => ({
           userProfile: { ...state.userProfile, ...updates },
@@ -199,7 +239,7 @@ export const useUserStore = create(
           return { ok: true, guest: true };
         }
 
-        const merged = { ...previousProfile, ...updates };
+        const merged = get().userProfile;
         const payload = {
           user_id: userId,
           mood_value: merged.currentMood,
@@ -216,17 +256,15 @@ export const useUserStore = create(
         try {
           const { error } = await supabase.from('user_preferences').upsert(payload, { onConflict: 'user_id' });
           if (error) {
-            set({ userProfile: previousProfile });
-            logError('profile_update_fail', error, { scene: 'store', user_id: userId, status: 'fail' });
-            return { ok: false, errorCode: error.code || 'PROFILE_UPDATE_FAILED' };
+            logError('profile_update_degraded', error, { scene: 'store', user_id: userId, status: 'degraded' });
+            return { ok: true, localOnly: true };
           }
 
           logEvent('profile_update_success', { scene: 'store', user_id: userId, status: 'success' });
           return { ok: true };
         } catch (error) {
-          set({ userProfile: previousProfile });
-          logError('profile_update_fail', error, { scene: 'store', user_id: userId, status: 'fail', error_code: 'PROFILE_UPDATE_FAILED' });
-          return { ok: false, errorCode: 'PROFILE_UPDATE_FAILED' };
+          logError('profile_update_degraded', error, { scene: 'store', user_id: userId, status: 'degraded', error_code: error?.code || 'PROFILE_UPDATE_FAILED' });
+          return { ok: true, localOnly: true };
         }
       },
       addMeal: async (meal) => {
@@ -262,31 +300,35 @@ export const useUserStore = create(
         }
 
         try {
-          const { data, error } = await supabase
+          let { data, error } = await supabase
             .from('meal_history')
             .insert(mapMealToDbInsert(optimisticMeal, userId))
             .select('*')
             .single();
 
+          if (error && isMissingRelationError(error)) {
+            const fallbackResult = await supabase
+              .from('meals')
+              .insert(mapMealToLegacyDbInsert(optimisticMeal, userId))
+              .select('*')
+              .single();
+            data = fallbackResult.data;
+            error = fallbackResult.error;
+          }
+
           if (error) {
-            set((state) => ({
-              dailyMeals: state.dailyMeals.filter((m) => m.id !== tempId),
-            }));
-            logError('meal_create_fail', error, { scene: 'store', user_id: userId, status: 'fail' });
-            return { ok: false, errorCode: error.code || 'MEAL_CREATE_FAILED' };
+            logError('meal_create_degraded', error, { scene: 'store', user_id: userId, status: 'degraded' });
+            return { ok: true, id: tempId, localOnly: true };
           }
 
           set((state) => ({
-            dailyMeals: state.dailyMeals.map((m) => (m.id === tempId ? mapMealRow(data) : m)),
+            dailyMeals: state.dailyMeals.map((m) => (m.id === tempId ? mapMealRow(data, optimisticMeal.timestamp) : m)),
           }));
           logEvent('meal_create_success', { scene: 'store', user_id: userId, status: 'success', meal_id: data.id });
           return { ok: true, id: data.id };
         } catch (error) {
-          set((state) => ({
-            dailyMeals: state.dailyMeals.filter((m) => m.id !== tempId),
-          }));
-          logError('meal_create_fail', error, { scene: 'store', user_id: userId, status: 'fail', error_code: 'MEAL_CREATE_FAILED' });
-          return { ok: false, errorCode: 'MEAL_CREATE_FAILED' };
+          logError('meal_create_degraded', error, { scene: 'store', user_id: userId, status: 'degraded', error_code: error?.code || 'MEAL_CREATE_FAILED' });
+          return { ok: true, id: tempId, localOnly: true };
         }
       },
       removeMeal: async (mealId) => {
@@ -306,7 +348,11 @@ export const useUserStore = create(
         }
 
         try {
-          const { error } = await supabase.from('meal_history').delete().eq('id', mealId).eq('user_id', userId);
+          let { error } = await supabase.from('meal_history').delete().eq('id', mealId).eq('user_id', userId);
+          if (error && isMissingRelationError(error)) {
+            const fallbackResult = await supabase.from('meals').delete().eq('id', mealId).eq('user_id', userId);
+            error = fallbackResult.error;
+          }
           if (error) {
             set((state) => ({
               dailyMeals: [removedMeal, ...state.dailyMeals].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
@@ -352,13 +398,25 @@ export const useUserStore = create(
         }
 
         try {
-          const { data, error } = await supabase
+          let { data, error } = await supabase
             .from('meal_history')
             .update(payload)
             .eq('id', mealId)
             .eq('user_id', userId)
             .select('*')
             .single();
+
+          if (error && isMissingRelationError(error)) {
+            const fallbackResult = await supabase
+              .from('meals')
+              .update(payload)
+              .eq('id', mealId)
+              .eq('user_id', userId)
+              .select('*')
+              .single();
+            data = fallbackResult.data;
+            error = fallbackResult.error;
+          }
 
           if (error) {
             set((state) => ({
@@ -504,6 +562,9 @@ export const useUserStore = create(
             .select('*');
 
           if (error) {
+            if (isMissingRelationError(error)) {
+              return { ok: true, skipped: true };
+            }
             logError('meal_sync_fail', error, { scene: 'store', user_id: userId, status: 'fail' });
             return { ok: false, errorCode: error.code || 'MEAL_SYNC_FAILED' };
           }
@@ -528,13 +589,23 @@ export const useUserStore = create(
         logEvent('history_hydrate_start', { scene: 'store', user_id: userId, status: 'start' });
         set({ isLoading: true });
         try {
-          const { data: profile, error: profileError } = await supabase
+          let { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', userId)
+            .eq('user_id', userId)
             .maybeSingle();
 
-          if (profileError) {
+          if (profileError && isMissingColumnError(profileError)) {
+            const fallbackProfileResult = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .maybeSingle();
+            profile = fallbackProfileResult.data;
+            profileError = fallbackProfileResult.error;
+          }
+
+          if (profileError && !isNonFatalSyncError(profileError)) {
             throw profileError;
           }
 
@@ -544,21 +615,33 @@ export const useUserStore = create(
             .eq('user_id', userId)
             .maybeSingle();
 
-          if (preferencesError) {
+          if (preferencesError && !isNonFatalSyncError(preferencesError)) {
             throw preferencesError;
           }
 
           await get().syncPendingMeals();
 
-          const { data: meals, error: mealsError } = await supabase
+          let { data: meals, error: mealsError } = await supabase
             .from('meal_history')
             .select('*')
             .eq('user_id', userId)
             .order('eaten_at', { ascending: false });
 
-          if (mealsError) {
+          if (mealsError && isMissingRelationError(mealsError)) {
+            const fallbackMealsResult = await supabase
+              .from('meals')
+              .select('*')
+              .eq('user_id', userId)
+              .order('eaten_at', { ascending: false });
+            meals = fallbackMealsResult.data;
+            mealsError = fallbackMealsResult.error;
+          }
+
+          if (mealsError && !isNonFatalSyncError(mealsError)) {
             throw mealsError;
           }
+
+          const mappedRemoteMeals = (meals || []).map(mapMealRow);
 
           set((state) => ({
             accountProfile: profile || null,
@@ -575,7 +658,7 @@ export const useUserStore = create(
                   healthGoals: Array.isArray(preferences.health_goals) ? preferences.health_goals : [],
                 }
               : state.userProfile,
-            dailyMeals: (meals || []).map(mapMealRow),
+            dailyMeals: mergeMealsPreferLocal(mappedRemoteMeals, state.dailyMeals),
             isLoading: false,
           }));
 

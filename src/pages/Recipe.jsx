@@ -175,8 +175,18 @@ const Recipe = () => {
         replace: true 
       });
       
-    } catch {
-      showFeedback('error', t('vibe_generate_failed'));
+    } catch (error) {
+      const code = error?.code;
+      const keyByCode = {
+        AI_KEY_MISSING: 'vibe_generate_missing_key',
+        AI_NETWORK_FAILED: 'vibe_generate_network_failed',
+        AI_REQUEST_FAILED: 'vibe_generate_request_failed',
+        AI_EMPTY_RESPONSE: 'vibe_generate_empty_response',
+        AI_INVALID_JSON: 'vibe_generate_invalid_json',
+      };
+      const message = t(keyByCode[code] || 'vibe_generate_failed');
+      const statusSuffix = typeof error?.status === 'number' ? ` (${error.status})` : '';
+      showFeedback('error', `${message}${statusSuffix}`);
     } finally {
       setRegenerating(false);
     }
@@ -249,6 +259,12 @@ const Recipe = () => {
           <h1 className="text-3xl font-bold leading-tight">{recipe.suggestion}</h1>
         </div>
       </div>
+
+      {recipe?.__meta?.source === 'mock' && (
+        <div className="mx-6 mt-5 surface-card border rounded-2xl px-4 py-3 text-sm text-muted-ui">
+          {t('recipe_mock_notice')}
+        </div>
+      )}
 
       <div className="p-6 space-y-6">
         <div className="surface-card p-5 rounded-2xl border shadow-sm relative overflow-hidden transition-colors">

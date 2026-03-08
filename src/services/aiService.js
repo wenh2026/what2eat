@@ -5,6 +5,26 @@ const API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
 const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 const USE_MOCK_RESPONSE = import.meta.env.VITE_AI_USE_MOCK === 'true';
 
+const extractJsonFromText = (text) => {
+  if (typeof text !== 'string') return null;
+  const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  if (!clean) return null;
+
+  try {
+    return JSON.parse(clean);
+  } catch {
+    const firstBrace = clean.indexOf('{');
+    const lastBrace = clean.lastIndexOf('}');
+    if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) return null;
+    const slice = clean.slice(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(slice);
+    } catch {
+      return null;
+    }
+  }
+};
+
 /**
  * Generates a prompt for the AI based on user profile and history.
  * @param {Object} userProfile - The user's profile.
@@ -70,34 +90,59 @@ export const generatePrompt = (userProfile, history, language = 'zh', context = 
  */
 export const callAI = async (prompt, language = 'zh') => {
   const responseLanguage = language?.startsWith('zh') ? 'Chinese (Simplified)' : 'English';
-  if (USE_MOCK_RESPONSE) {
-    return mockAIResponse(language);
+  const hasApiKey = typeof API_KEY === 'string' && API_KEY.trim().length > 0;
+  if (USE_MOCK_RESPONSE || (!hasApiKey && import.meta.env.DEV)) {
+    const recipe = await mockAIResponse(language);
+    return {
+      ...recipe,
+      __meta: {
+        source: 'mock',
+        reason: USE_MOCK_RESPONSE ? 'env_mock_enabled' : 'missing_key_in_dev',
+      },
+    };
   }
-  if (!API_KEY) {
+  if (!hasApiKey) {
     const error = new Error('Missing AI API key');
     error.code = 'AI_KEY_MISSING';
     throw error;
   }
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`
-    },
-    body: JSON.stringify({
-      model: 'qwen-turbo',
-      messages: [
-        { role: 'system', content: `You are a helpful nutritionist assistant that outputs only JSON. The values of "suggestion", "reasoning", and "ingredients" must be in ${responseLanguage}.` },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7
-    })
-  });
+  let response;
+  try {
+    response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'qwen-turbo',
+        messages: [
+          { role: 'system', content: `You are a helpful nutritionist assistant that outputs only JSON. The values of "suggestion", "reasoning", and "ingredients" must be in ${responseLanguage}.` },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7
+      })
+    });
+  } catch (cause) {
+    const error = new Error('Network error');
+    error.code = 'AI_NETWORK_FAILED';
+    error.cause = cause;
+    throw error;
+  }
 
   if (!response.ok) {
-    const error = new Error(`API Error: ${response.statusText}`);
+    let detail = '';
+    try {
+      detail = await response.text();
+    } catch {
+      detail = '';
+    }
+    const safeDetail = typeof detail === 'string' ? detail.slice(0, 300) : '';
+    const error = new Error(`API Error: ${response.status} ${response.statusText}${safeDetail ? ` - ${safeDetail}` : ''}`);
     error.code = 'AI_REQUEST_FAILED';
+    error.status = response.status;
+    error.statusText = response.statusText;
     throw error;
   }
 
@@ -110,14 +155,14 @@ export const callAI = async (prompt, language = 'zh') => {
     throw error;
   }
 
-  try {
-    const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
-    return normalizeRecipeResponse(JSON.parse(cleanContent), language);
-  } catch {
+  const parsed = extractJsonFromText(content);
+  if (!parsed) {
     const error = new Error('Invalid JSON response');
     error.code = 'AI_INVALID_JSON';
     throw error;
   }
+  const recipe = normalizeRecipeResponse(parsed, language);
+  return { ...recipe, __meta: { source: 'ai' } };
 };
 
 const mockAIResponse = async (language = 'zh') => {
@@ -144,6 +189,20 @@ const mockAIResponse = async (language = 'zh') => {
 
 const normalizeRecipeResponse = (data, language = 'zh') => {
   const isZh = language?.startsWith('zh');
+  const rawIngredients = data?.ingredients;
+  const rawSteps = data?.steps ?? data?.step_by_step;
+  const ingredients = Array.isArray(rawIngredients)
+    ? rawIngredients
+    : typeof rawIngredients === 'string'
+      ? rawIngredients.split(/[,\n、，]/).map((x) => x.trim()).filter(Boolean)
+      : [];
+  const steps = Array.isArray(rawSteps)
+    ? rawSteps
+    : typeof rawSteps === 'string'
+      ? rawSteps.split(/\n+/).map((x) => x.replace(/^\d+[.)]\s*/, '').trim()).filter(Boolean)
+      : [];
+  const proteinRaw = data?.nutrients?.protein ?? data?.protein ?? data?.nutrition?.protein;
+  const caloriesRaw = data?.nutrients?.calories ?? data?.calories ?? data?.nutrition?.calories;
   const fallbackSteps = isZh
     ? ["准备食材", "按喜好烹调", "装盘享用"]
     : ["Prepare ingredients", "Cook with your preferred method", "Plate and enjoy"];
@@ -151,16 +210,12 @@ const normalizeRecipeResponse = (data, language = 'zh') => {
   return {
     suggestion: data?.suggestion || (isZh ? "营养餐推荐" : "Nutritious meal suggestion"),
     reasoning: data?.reasoning || (isZh ? "根据你的状态生成的均衡餐建议。" : "A balanced meal suggestion generated for your current state."),
-    ingredients: Array.isArray(data?.ingredients) ? data.ingredients : [],
+    ingredients,
     nutrients: {
-      protein: data?.nutrients?.protein || "0g",
-      calories: data?.nutrients?.calories || "0kcal",
+      protein: proteinRaw || "0g",
+      calories: caloriesRaw || "0kcal",
     },
     prepTime: data?.prepTime || data?.prep_time || (isZh ? "约20分钟" : "About 20 min"),
-    steps: Array.isArray(data?.steps)
-      ? data.steps
-      : Array.isArray(data?.step_by_step)
-        ? data.step_by_step
-        : fallbackSteps,
+    steps: steps.length > 0 ? steps : fallbackSteps,
   };
 };

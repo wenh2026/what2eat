@@ -64,15 +64,22 @@ const Vibe = () => {
     const outputLanguage = i18n.language?.startsWith('zh') ? 'zh' : 'en';
     const currentHour = new Date().getHours();
     const mealMoment = currentHour < 11 ? 'breakfast' : currentHour < 16 ? 'lunch' : 'dinner';
-
-    const profileResult = await updateUserProfile({
+    const profilePayload = {
       currentMood: mood,
       lifeStage: selectedLifeStage,
       dietaryIntents,
       cravings,
-    });
-    if (!profileResult?.ok) {
+    };
+
+    const profileUpdatePromise = updateUserProfile(profilePayload);
+    const profileTimeoutResult = await Promise.race([
+      profileUpdatePromise,
+      new Promise((resolve) => setTimeout(() => resolve({ ok: true, localOnly: true, timeout: true }), 1800)),
+    ]);
+    if (!profileTimeoutResult?.ok) {
       setErrorMessage(t('vibe_profile_save_failed'));
+    } else if (profileTimeoutResult?.localOnly || profileTimeoutResult?.timeout) {
+      profileUpdatePromise.catch(() => null);
     }
 
     const prompt = generatePrompt({
@@ -85,8 +92,8 @@ const Vibe = () => {
 
     try {
       const result = await callAI(prompt, outputLanguage);
-      navigate('/recipe', { 
-        state: { 
+      navigate('/recipe', {
+        state: {
           recipe: result,
           generationParams: {
             currentMood: mood,
@@ -96,10 +103,20 @@ const Vibe = () => {
             weather,
             mealMoment
           }
-        } 
+        }
       });
-    } catch {
-      setErrorMessage(t('vibe_generate_failed'));
+    } catch (error) {
+      const code = error?.code;
+      const keyByCode = {
+        AI_KEY_MISSING: 'vibe_generate_missing_key',
+        AI_NETWORK_FAILED: 'vibe_generate_network_failed',
+        AI_REQUEST_FAILED: 'vibe_generate_request_failed',
+        AI_EMPTY_RESPONSE: 'vibe_generate_empty_response',
+        AI_INVALID_JSON: 'vibe_generate_invalid_json',
+      };
+      const message = t(keyByCode[code] || 'vibe_generate_failed');
+      const statusSuffix = typeof error?.status === 'number' ? ` (${error.status})` : '';
+      setErrorMessage(`${message}${statusSuffix}`);
     } finally {
       setLoading(false);
     }

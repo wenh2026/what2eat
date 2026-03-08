@@ -2,89 +2,105 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, X, Edit2, Check, Trash2 } from 'lucide-react';
 import { useUserStore } from '../store/userStore';
-import { calculateNutrientDeviation, getAIInsight, filterMealsByWindow } from '../logic/dietaryGuidelines';
+import { RDA_DATA, calculateNutrientDeviation, getAIInsight, filterMealsByWindow } from '../logic/dietaryGuidelines';
 import { useHeaderMotion } from '../lib/useHeaderMotion';
 
-const NutritionBall = ({ deviation, timeWindow }) => {
+const CalorieDashboard = ({ deviation, dailyMeals, userProfile, timeWindow, selectedDate }) => {
   const { t } = useTranslation();
-  // Calculate score based on deviation (lower deviation is better)
+
+  // 1. Calculate Score
   const scores = Object.values(deviation).map(v => Math.abs(v));
   const avgDeviation = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
+  const healthScore = Math.max(0, Math.round(100 - avgDeviation));
   
-  // Score 0-100 (0 deviation = 100 score)
-  const healthScore = Math.max(0, 100 - avgDeviation);
+  // 2. Calculate Actual Calories vs Target
+  // Use filterMealsByWindow logic to get consistent calorie data
+  const filteredMeals = useMemo(() => {
+     return filterMealsByWindow(dailyMeals, timeWindow === 'week' ? 'week' : 'date', timeWindow === 'week' ? undefined : selectedDate);
+  }, [dailyMeals, timeWindow, selectedDate]);
+
+  const totalCalories = filteredMeals.reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
+
+  const lifeStage = userProfile.lifeStage || 'adult';
+  const targetData = RDA_DATA[lifeStage] || RDA_DATA.adult;
+  const targetCalories = targetData.calories; // e.g. 2000
   
-  // Visual parameters
-  const radius = 40 + (healthScore / 100) * 40; // 40 to 80
-  const particleCount = Math.floor(healthScore / 2); // 0 to 50
+  // For week view, we want Average Daily Calories
+  const displayCalories = timeWindow === 'week' 
+    ? Math.round(totalCalories / 7) 
+    : Math.round(totalCalories);
+
+  // Visuals
+  const percentage = Math.min(100, Math.max(0, (displayCalories / targetCalories) * 100));
+  const isOver = displayCalories > targetCalories;
   
-  // Color based on score
-  const color = healthScore > 80 ? '#22c55e' : healthScore > 50 ? '#f97316' : '#ef4444';
-
-  // Generate particles deterministically
-  const particles = useMemo(() => {
-    return Array.from({ length: particleCount }).map((_, i) => {
-      // Deterministic pseudo-random based on index and healthScore
-      const seed = (i + 1) * (Math.floor(healthScore) + 1);
-      const rand1 = Math.abs(Math.sin(seed));
-      const rand2 = Math.abs(Math.cos(seed));
-      const rand3 = Math.abs(Math.sin(seed * 2));
-      const rand4 = Math.abs(Math.cos(seed * 2));
-
-      return {
-        cx: 50 + (rand1 - 0.5) * radius * 1.5,
-        cy: 50 + (rand2 - 0.5) * radius * 1.5,
-        r: rand3 * 3 + 1,
-        opacity: rand4 * 0.5 + 0.1,
-        delay: i * 0.1,
-        duration: 2 + rand1
-      };
-    });
-  }, [particleCount, radius, healthScore]);
-
+  // Circle config
+  const size = 220;
+  const strokeWidth = 15;
+  const center = size / 2;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+  
   return (
-    <div className="flex flex-col items-center justify-center py-8">
-      <div className="relative size-64 flex items-center justify-center">
-        {/* Glow effect */}
-        <div 
-          className="absolute inset-0 rounded-full blur-2xl opacity-20 transition-all duration-1000"
-          style={{ backgroundColor: color, transform: `scale(${healthScore/100})` }}
-        ></div>
-        
-        <svg viewBox="0 0 100 100" className="size-full drop-shadow-lg">
-          {/* Main Ball */}
-          <circle 
-            cx="50" 
-            cy="50" 
-            r={radius / 2} 
-            fill={color} 
-            className="transition-all duration-1000 ease-out opacity-90"
+    <div className="flex flex-col items-center justify-center py-6">
+      <div className="relative size-[220px] flex items-center justify-center">
+        {/* Background Circle */}
+        <svg className="size-full transform -rotate-90">
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            className="text-gray-100 dark:text-gray-800"
           />
-          
-          {/* Particles */}
-          {particles.map((p, i) => (
-            <circle
-              key={i}
-              cx={p.cx}
-              cy={p.cy}
-              r={p.r}
-              fill="white"
-              fillOpacity={p.opacity}
-              className="animate-pulse"
-              style={{ animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s` }}
-            />
-          ))}
+          {/* Progress Circle */}
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke={isOver ? '#ef4444' : '#22c55e'} // Red if over, Green if under/target
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-1000 ease-out"
+          />
         </svg>
         
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white drop-shadow-md">
-          <span className="text-3xl font-bold">{Math.round(healthScore)}</span>
-          <span className="text-xs uppercase tracking-wider font-medium opacity-90">
-            {timeWindow === 'week' ? t('history_score_week') : t('history_score_today')}
-          </span>
+        {/* Center Content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center">
+             <span className="text-xs font-bold text-muted-ui uppercase tracking-wider mb-1">
+               {timeWindow === 'week' ? t('history_average_calories', { defaultValue: 'Avg Calories' }) : t('recipe_calories')}
+             </span>
+             <span className="text-4xl font-extrabold text-deep-charcoal dark:text-off-white">
+               {displayCalories}
+             </span>
+             <span className="text-xs font-medium text-gray-400 mt-1">
+               / {targetCalories} {t('history_kcal_unit')}
+             </span>
+          </div>
+        </div>
+        
+        {/* Score Badge (Floating) */}
+        <div className="absolute -bottom-2 bg-white dark:bg-gray-800 shadow-md border border-gray-100 dark:border-gray-700 rounded-full px-4 py-1 flex items-center gap-2">
+           <div className={`w-2 h-2 rounded-full ${healthScore > 80 ? 'bg-green-500' : healthScore > 50 ? 'bg-orange-500' : 'bg-red-500'}`}></div>
+           <span className="text-sm font-bold text-deep-charcoal dark:text-off-white">
+             {healthScore} <span className="text-[10px] text-muted-ui font-normal">{t('history_health_score')}</span>
+           </span>
         </div>
       </div>
-      <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
-        {t('history_based_on_balance')}
+      
+      {/* Summary Text */}
+      <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6 max-w-xs mx-auto">
+        {isOver 
+          ? t('history_status_over', { defaultValue: 'You are over your daily calorie limit.' }) 
+          : t('history_status_good', { defaultValue: 'You are doing great with your calorie intake.' })
+        }
       </p>
     </div>
   );
@@ -561,7 +577,7 @@ const History = () => {
             : t('history_nutrient_balance')
           }
         </h2>
-        <NutritionBall deviation={deviation} timeWindow={showCalendar ? 'date' : timeWindow} />
+        <CalorieDashboard deviation={deviation} dailyMeals={dailyMeals} userProfile={userProfile} timeWindow={showCalendar ? 'date' : timeWindow} selectedDate={selectedDate} />
       </section>
 
       {/* Weekly Trend or Calendar */}
