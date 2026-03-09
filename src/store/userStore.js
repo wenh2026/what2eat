@@ -643,6 +643,18 @@ export const useUserStore = create(
 
           const mappedRemoteMeals = (meals || []).map(mapMealRow);
 
+          // Correctly merge remote and local meals.
+          // Prioritize remote data for synced items, but keep local-only items.
+          // The previous mergeMealsPreferLocal was flawed because it might prioritize stale local cache over fresh remote data.
+          // Strategy:
+          // 1. Start with all remote meals (source of truth).
+          // 2. Add any local meals that have NOT been synced yet (e.g. offline creations).
+          
+          const remoteIds = new Set(mappedRemoteMeals.map(m => m.id));
+          const localUnsynced = state.dailyMeals.filter(m => !m.synced && !remoteIds.has(m.id));
+          
+          const mergedMeals = [...mappedRemoteMeals, ...localUnsynced].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
           set((state) => ({
             accountProfile: profile || null,
             userProfile: preferences
@@ -658,7 +670,7 @@ export const useUserStore = create(
                   healthGoals: Array.isArray(preferences.health_goals) ? preferences.health_goals : [],
                 }
               : state.userProfile,
-            dailyMeals: mergeMealsPreferLocal(mappedRemoteMeals, state.dailyMeals),
+            dailyMeals: mergedMeals,
             isLoading: false,
           }));
 
