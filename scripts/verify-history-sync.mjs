@@ -35,11 +35,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const now = Date.now();
-const email = `what2eat.test+${now}@example.com`;
-const password = `Pw!${now}Aa`;
+const email = process.env.TEST_EMAIL || `what2eat.test+${now}@example.com`;
+const password = process.env.TEST_PASSWORD || `Pw!${now}Aa`;
 const clientId = `verify-${now}`;
 
 const signInOrSignUp = async () => {
+  const signInFirst = await supabase.auth.signInWithPassword({ email, password });
+  if (!signInFirst.error && signInFirst.data?.user) return signInFirst.data.user;
+
   const signUp = await supabase.auth.signUp({ email, password });
   if (signUp.error) {
     const signIn = await supabase.auth.signInWithPassword({ email, password });
@@ -92,6 +95,21 @@ const run = async () => {
 };
 
 run().catch((err) => {
+  if (err?.code === 'invalid_credentials' && !process.env.TEST_EMAIL) {
+    console.error(
+      JSON.stringify(
+        {
+          ok: false,
+          message:
+            'Sign-in failed after sign-up. This usually means email confirmation is enabled in Supabase. Use an existing confirmed test account by setting TEST_EMAIL and TEST_PASSWORD.',
+          code: err.code,
+        },
+        null,
+        2,
+      ),
+    );
+    process.exit(1);
+  }
   console.error(JSON.stringify({ ok: false, message: err?.message, code: err?.code, details: err }, null, 2));
   process.exit(1);
 });
