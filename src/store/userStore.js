@@ -94,6 +94,19 @@ const isPermissionError = (error) => error?.code === '42501';
 const isNonFatalSyncError = (error) =>
   isMissingRelationError(error) || isMissingColumnError(error) || isPermissionError(error);
 
+const ensureProfileRow = async (userId) => {
+  if (!userId) return { ok: false };
+  try {
+    const { error } = await supabase.from('profiles').upsert({ id: userId }, { onConflict: 'id' });
+    if (error) {
+      return { ok: false, error };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error };
+  }
+};
+
 const mapMealRow = (meal, fallbackTimestamp) => ({
   id: meal.id,
   clientId: meal.client_id || null,
@@ -199,9 +212,11 @@ export const useUserStore = create(
       dailyMeals: [],
       favorites: [],
       isLoading: false,
+      lastSyncError: null,
       user: null,
       session: null,
       setUser: (user, session) => set({ user, session }),
+      setLastSyncError: (payload) => set({ lastSyncError: payload }),
       clearUserData: () => {
         set({
           user: null,
@@ -239,6 +254,8 @@ export const useUserStore = create(
           return { ok: true, guest: true };
         }
 
+        await ensureProfileRow(userId);
+
         const merged = get().userProfile;
         const payload = {
           user_id: userId,
@@ -257,6 +274,7 @@ export const useUserStore = create(
           const { error } = await supabase.from('user_preferences').upsert(payload, { onConflict: 'user_id' });
           if (error) {
             logError('profile_update_degraded', error, { scene: 'store', user_id: userId, status: 'degraded' });
+            get().setLastSyncError({ scene: 'profile_update', code: error.code || 'PROFILE_UPDATE_FAILED', message: error.message || 'Profile update failed', ts: new Date().toISOString() });
             return { ok: true, localOnly: true };
           }
 
@@ -264,6 +282,7 @@ export const useUserStore = create(
           return { ok: true };
         } catch (error) {
           logError('profile_update_degraded', error, { scene: 'store', user_id: userId, status: 'degraded', error_code: error?.code || 'PROFILE_UPDATE_FAILED' });
+          get().setLastSyncError({ scene: 'profile_update', code: error?.code || 'PROFILE_UPDATE_FAILED', message: error?.message || 'Profile update failed', ts: new Date().toISOString() });
           return { ok: true, localOnly: true };
         }
       },
@@ -299,6 +318,13 @@ export const useUserStore = create(
           return { ok: true, id: tempId, guest: true };
         }
 
+        const ensureResult = await ensureProfileRow(userId);
+        if (!ensureResult?.ok) {
+          logError('profile_ensure_fail', ensureResult?.error, { scene: 'store', user_id: userId, status: 'fail', error_code: ensureResult?.error?.code || 'PROFILE_ENSURE_FAILED' });
+          get().setLastSyncError({ scene: 'profile_ensure', code: ensureResult?.error?.code || 'PROFILE_ENSURE_FAILED', message: ensureResult?.error?.message || 'Profile ensure failed', ts: new Date().toISOString() });
+          return { ok: true, id: tempId, localOnly: true, errorCode: ensureResult?.error?.code || 'PROFILE_ENSURE_FAILED' };
+        }
+
         try {
           let { data, error } = await supabase
             .from('meal_history')
@@ -318,7 +344,8 @@ export const useUserStore = create(
 
           if (error) {
             logError('meal_create_degraded', error, { scene: 'store', user_id: userId, status: 'degraded' });
-            return { ok: true, id: tempId, localOnly: true };
+            get().setLastSyncError({ scene: 'meal_create', code: error.code || 'MEAL_CREATE_FAILED', message: error.message || 'Meal create failed', ts: new Date().toISOString() });
+            return { ok: true, id: tempId, localOnly: true, errorCode: error.code || 'MEAL_CREATE_FAILED' };
           }
 
           set((state) => ({
@@ -328,7 +355,8 @@ export const useUserStore = create(
           return { ok: true, id: data.id };
         } catch (error) {
           logError('meal_create_degraded', error, { scene: 'store', user_id: userId, status: 'degraded', error_code: error?.code || 'MEAL_CREATE_FAILED' });
-          return { ok: true, id: tempId, localOnly: true };
+          get().setLastSyncError({ scene: 'meal_create', code: error?.code || 'MEAL_CREATE_FAILED', message: error?.message || 'Meal create failed', ts: new Date().toISOString() });
+          return { ok: true, id: tempId, localOnly: true, errorCode: error?.code || 'MEAL_CREATE_FAILED' };
         }
       },
       removeMeal: async (mealId) => {
@@ -581,8 +609,6 @@ export const useUserStore = create(
       },
       hydrateFromSupabase: async () => {
         const userId = getUserId(get());
-        // Do NOT clear data here if no userId, just return.
-        // Clearing is handled by auth listener or explicit signOut.
         if (!userId) {
           set({ isLoading: false });
           return { ok: false, errorCode: 'AUTH_REQUIRED' };
@@ -591,6 +617,8 @@ export const useUserStore = create(
         logEvent('history_hydrate_start', { scene: 'store', user_id: userId, status: 'start' });
         set({ isLoading: true });
         try {
+          await ensureProfileRow(userId);
+
           let { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -645,16 +673,9 @@ export const useUserStore = create(
 
           const mappedRemoteMeals = (meals || []).map(mapMealRow);
 
-          // Correctly merge remote and local meals.
-          // Prioritize remote data for synced items, but keep local-only items.
-          // The previous mergeMealsPreferLocal was flawed because it might prioritize stale local cache over fresh remote data.
-          // Strategy:
-          // 1. Start with all remote meals (source of truth).
-          // 2. Add any local meals that have NOT been synced yet (e.g. offline creations).
-          
-          const remoteIds = new Set(mappedRemoteMeals.map(m => m.id));
-          const localUnsynced = state.dailyMeals.filter(m => !m.synced && !remoteIds.has(m.id));
-          
+          const localMeals = get().dailyMeals;
+          const remoteIds = new Set(mappedRemoteMeals.map((m) => m.id));
+          const localUnsynced = (Array.isArray(localMeals) ? localMeals : []).filter((m) => !m.synced && !remoteIds.has(m.id));
           const mergedMeals = [...mappedRemoteMeals, ...localUnsynced].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
           set((state) => ({
@@ -683,6 +704,7 @@ export const useUserStore = create(
         } catch (error) {
           set({ isLoading: false });
           logError('history_hydrate_fail', error, { scene: 'store', user_id: userId, status: 'fail', error_code: error?.code || 'HYDRATE_FAILED' });
+          get().setLastSyncError({ scene: 'hydrate', code: error?.code || 'HYDRATE_FAILED', message: error?.message || 'Hydrate failed', ts: new Date().toISOString() });
           return { ok: false, errorCode: error?.code || 'HYDRATE_FAILED' };
         }
       },

@@ -84,6 +84,12 @@ const Recipe = () => {
       return;
     }
 
+    if (result?.localOnly && !result?.guest) {
+      setCheckingIn(false);
+      showFeedback('error', t('history_save_failed_cloud', { defaultValue: '已保存到本地，但云端同步失败（请检查网络/登录/权限）。' }));
+      return;
+    }
+
     const afterMeals = [...dailyMeals, {
       name: recipe.suggestion,
       calories: parseInt(recipe.nutrients.calories) || 0,

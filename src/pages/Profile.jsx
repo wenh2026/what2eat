@@ -6,11 +6,12 @@ import Auth from '../components/Auth';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useHeaderMotion } from '../lib/useHeaderMotion';
 import { RDA_DATA, calculateNutrientDeviation } from '../logic/dietaryGuidelines';
+import { supabaseMeta } from '../lib/supabase';
 
 const Profile = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, signOut, isDarkMode, toggleDarkMode, userProfile, updateUserProfile, dailyMeals, favorites, toggleFavorite } = useUserStore();
+  const { user, signOut, isDarkMode, toggleDarkMode, userProfile, updateUserProfile, dailyMeals, favorites, toggleFavorite, lastSyncError } = useUserStore();
   const { isHeaderCompact, isHeaderHidden } = useHeaderMotion({ hideAt: 90 });
   const [feedback, setFeedback] = useState({ type: '', message: '' });
   const [signingOut, setSigningOut] = useState(false);
@@ -221,6 +222,23 @@ const Profile = () => {
             <div className="text-center mt-4">
               <h2 className="text-2xl font-bold text-deep-charcoal dark:text-off-white">{user.email?.split('@')[0]}</h2>
               <p className="text-primary text-sm font-medium mt-1">{user.email}</p>
+            </div>
+          </section>
+
+          <section className="mx-6 mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-muted-ui dark:border-gray-700 dark:bg-deep-charcoal">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <span>{t('profile_debug_supabase', { defaultValue: 'Supabase' })}</span>
+                <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400">{supabaseMeta.keySource}</span>
+              </div>
+              <div className="font-mono text-[11px] text-gray-500 dark:text-gray-400 break-all">{supabaseMeta.url}</div>
+              {lastSyncError ? (
+                <div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                  <div className="font-semibold">{t('profile_debug_last_error', { defaultValue: 'Last sync error' })}</div>
+                  <div className="font-mono break-all">{lastSyncError.scene} · {lastSyncError.code}</div>
+                  <div className="opacity-90">{lastSyncError.message}</div>
+                </div>
+              ) : null}
             </div>
           </section>
 

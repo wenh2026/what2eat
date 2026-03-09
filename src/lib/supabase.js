@@ -6,6 +6,11 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const fallbackSupabaseUrl = 'https://utzcyevsjjdgbmvaxqyq.supabase.co';
 const fallbackSupabaseKey = 'sb_publishable_KGIKMh8KyIJcjzDqA5I6lw_iND07gI7';
 
+export const supabaseMeta = {
+  url: supabaseUrl || fallbackSupabaseUrl,
+  keySource: supabaseKey ? 'env' : 'fallback',
+};
+
 export const supabase = createClient(
   supabaseUrl || fallbackSupabaseUrl,
   supabaseKey || fallbackSupabaseKey
