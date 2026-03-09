@@ -8,6 +8,17 @@ import { useHeaderMotion } from '../lib/useHeaderMotion';
 const CalorieDashboard = ({ deviation, dailyMeals, userProfile, timeWindow, selectedDate }) => {
   const { t } = useTranslation();
 
+  const toFiniteNumber = (value) => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/[^0-9.+-]/g, '');
+      const parsed = Number(cleaned);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   // 1. Calculate Score
   const scores = Object.values(deviation).map(v => Math.abs(v));
   const avgDeviation = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
@@ -19,7 +30,7 @@ const CalorieDashboard = ({ deviation, dailyMeals, userProfile, timeWindow, sele
      return filterMealsByWindow(dailyMeals, timeWindow === 'week' ? 'week' : 'date', timeWindow === 'week' ? undefined : selectedDate);
   }, [dailyMeals, timeWindow, selectedDate]);
 
-  const totalCalories = filteredMeals.reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
+  const totalCalories = filteredMeals.reduce((sum, m) => sum + toFiniteNumber(m.calories ?? m.nutrients?.calories), 0);
 
   const lifeStage = userProfile.lifeStage || 'adult';
   const targetData = RDA_DATA[lifeStage] || RDA_DATA.adult;
@@ -109,8 +120,44 @@ const CalorieDashboard = ({ deviation, dailyMeals, userProfile, timeWindow, sele
 const WeeklyTrendChart = ({ dailyMeals }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language?.startsWith('zh') ? 'zh-CN' : 'en-US';
-  
-  const last7Days = useMemo(() => {
+
+  const chartData = useMemo(() => {
+    // Helper to parse meal time safely
+    const getMealTime = (meal) => {
+      const raw = meal?.timestamp || meal?.eaten_at || meal?.eatenAt || meal?.logged_at || meal?.created_at;
+      if (typeof raw === 'number') {
+        const ms = raw < 1e12 ? raw * 1000 : raw;
+        return Number.isFinite(ms) ? ms : NaN;
+      }
+      if (typeof raw === 'string') {
+        const trimmed = raw.trim();
+        // Try parsing as timestamp string first
+        if (/^\d+$/.test(trimmed)) {
+          const n = Number(trimmed);
+          if (!Number.isFinite(n)) return NaN;
+          return n < 1e12 ? n * 1000 : n;
+        }
+        // Try parsing as ISO/Date string
+        const value = new Date(trimmed).getTime();
+        return Number.isFinite(value) ? value : NaN;
+      }
+      const value = new Date(raw || 0).getTime();
+      return Number.isFinite(value) ? value : NaN;
+    };
+
+    // Helper to ensure valid number
+    const toFiniteNumber = (value) => {
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      if (typeof value === 'string') {
+        const cleaned = value.replace(/[^0-9.+-]/g, '');
+        const parsed = Number(cleaned);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    // Generate last 7 days including today
     const days = [];
     const today = new Date();
     for (let i = 6; i >= 0; i--) {
@@ -118,52 +165,58 @@ const WeeklyTrendChart = ({ dailyMeals }) => {
       d.setDate(today.getDate() - i);
       days.push(d);
     }
-    return days;
-  }, []);
 
-  const chartData = useMemo(() => {
-    return last7Days.map(day => {
+    return days.map(day => {
+      // Define day boundaries in local time (00:00:00 to 23:59:59.999)
       const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
       const dayEnd = dayStart + 86400000;
       
-      const cals = dailyMeals
-        .filter(m => {
-          const t = new Date(m.timestamp).getTime();
-          return t >= dayStart && t < dayEnd;
-        })
-        .reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
+      let matchCount = 0;
+      const cals = dailyMeals.reduce((sum, m) => {
+        const t = getMealTime(m);
+        // Check if valid time and within range
+        if (Number.isFinite(t) && t >= dayStart && t < dayEnd) {
+          matchCount++;
+          return sum + toFiniteNumber(m.calories ?? m.nutrients?.calories);
+        }
+        return sum;
+      }, 0);
         
       return {
         dayName: day.toLocaleDateString(locale, { weekday: 'narrow' }),
-        calories: cals,
-        date: day.getDate()
+        calories: Math.round(cals),
+        date: day.getDate(),
+        debugDate: day.toLocaleDateString(),
+        debugStart: dayStart,
+        debugEnd: dayEnd,
+        matchCount: matchCount
       };
     });
-  }, [dailyMeals, last7Days, locale]);
+  }, [dailyMeals, locale]);
 
-  const maxCals = Math.max(...chartData.map(d => d.calories), 2000); // Minimum scale 2000 to avoid huge bars for small meals
-
+  const maxCals = Math.max(...chartData.map(d => d.calories), 2000); // Minimum scale 2000
+  
   return (
     <div className="surface-card rounded-3xl p-6 shadow-sm border mb-6 transition-colors">
       <h2 className="text-lg font-bold mb-4 dark:text-off-white">{t('history_weekly_trend')}</h2>
-      <div className="flex items-end justify-between h-32 gap-2">
+      <div className="flex items-stretch justify-between h-40 gap-2">
         {chartData.map((d, i) => {
           const heightPct = Math.min(100, (d.calories / maxCals) * 100);
           const isToday = i === 6;
           
           return (
-            <div key={i} className="flex flex-col items-center gap-2 flex-1 group">
-              <div className="w-full relative flex items-end h-full bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+            <div key={i} className="flex flex-col items-center justify-end gap-2 flex-1 group h-full">
+              <div className="w-full relative flex items-end flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
                 <div 
-                  className={`w-full transition-all duration-500 ease-out ${isToday ? 'bg-primary' : 'bg-primary/40'}`}
-                  style={{ height: `${heightPct}%` }}
-                ></div>
-                {/* Tooltip */}
-                <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 text-white text-[10px] text-center py-1">
-                  {d.calories}
+                  className={`w-full transition-all duration-500 ease-out rounded-t-lg ${isToday ? 'bg-primary' : 'bg-primary/40'}`}
+                  style={{ height: `${heightPct}%`, minHeight: heightPct > 0 ? '4px' : '0' }}
+                />
+                {/* Value Label */}
+                <div className="absolute bottom-1 left-0 right-0 text-white text-[10px] text-center font-bold z-10 pointer-events-none mix-blend-difference">
+                  {d.calories > 0 ? d.calories : ''}
                 </div>
               </div>
-              <span className={`text-xs font-medium ${isToday ? 'text-primary font-bold' : 'text-gray-400'}`}>
+              <span className={`text-xs font-medium h-4 ${isToday ? 'text-primary font-bold' : 'text-gray-400'}`}>
                 {d.dayName}
               </span>
             </div>
@@ -178,6 +231,12 @@ const CalendarView = ({ currentDate, onDateSelect, dailyMeals }) => {
   const { t, i18n } = useTranslation();
   const [viewDate, setViewDate] = useState(new Date(currentDate));
   const locale = i18n.language?.startsWith('zh') ? 'zh-CN' : 'en-US';
+
+  const getMealTime = (meal) => {
+    const raw = meal?.timestamp || meal?.eaten_at || meal?.eatenAt || meal?.logged_at || meal?.created_at;
+    const value = new Date(raw || 0).getTime();
+    return Number.isFinite(value) ? value : NaN;
+  };
 
   // Sync viewDate when currentDate changes
   React.useEffect(() => { setViewDate(new Date(currentDate)); }, [currentDate]);
@@ -209,7 +268,7 @@ const CalendarView = ({ currentDate, onDateSelect, dailyMeals }) => {
     const dayEnd = dayStart + 86400000;
     
     const mealsForDay = dailyMeals.filter(meal => {
-      const t = new Date(meal.timestamp).getTime();
+      const t = getMealTime(meal);
       return t >= dayStart && t < dayEnd;
     });
 
@@ -346,12 +405,15 @@ const MealItem = ({ meal, onDelete, onUpdate }) => {
   });
 
   const formatDate = (isoString) => {
-    const date = new Date(isoString);
+    const date = new Date(isoString || 0);
+    if (!Number.isFinite(date.getTime())) return '';
     const locale = i18n.language?.startsWith('zh') ? 'zh-CN' : 'en-US';
     return new Intl.DateTimeFormat(locale, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     }).format(date);
   };
+
+  const mealTimeRaw = meal?.timestamp || meal?.eaten_at || meal?.eatenAt || meal?.logged_at || meal?.created_at;
 
   const handleSave = async () => {
     if (isSubmitting) return;
@@ -433,7 +495,7 @@ const MealItem = ({ meal, onDelete, onUpdate }) => {
         </div>
         <div>
           <h4 className="font-bold text-sm text-deep-charcoal dark:text-off-white">{meal.name}</h4>
-          <p className="text-xs text-muted-ui">{formatDate(meal.timestamp)}</p>
+          <p className="text-xs text-muted-ui">{formatDate(mealTimeRaw)}</p>
         </div>
       </div>
       <div className="flex flex-col items-end gap-1">
@@ -481,7 +543,12 @@ const History = () => {
   // Filter and sort meals
   const sortedMeals = useMemo(() => {
     const filtered = filterMealsByWindow(dailyMeals, showCalendar ? 'date' : timeWindow, selectedDate);
-    return filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const getMealTime = (meal) => {
+      const raw = meal?.timestamp || meal?.eaten_at || meal?.eatenAt || meal?.logged_at || meal?.created_at;
+      const value = new Date(raw || 0).getTime();
+      return Number.isFinite(value) ? value : 0;
+    };
+    return filtered.sort((a, b) => getMealTime(b) - getMealTime(a));
   }, [dailyMeals, timeWindow, showCalendar, selectedDate]);
 
   const handleDeleteMeal = async (mealId) => {
