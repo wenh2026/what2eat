@@ -45,22 +45,32 @@ function App() {
         }
         return;
       }
-
-      clearUserData();
+      
+      // Only clear if we explicitly don't have a session AND it's not just an initial load glitch
+      if (source !== 'app_bootstrap') {
+         clearUserData();
+      }
       logEvent('session_restore_fail', { scene: source, status: 'fail', error_code: 'NO_SESSION' });
     };
 
+    // 1. Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       void syncSession(session, 'app_bootstrap');
     });
 
+    // 2. Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      logEvent('auth_state_change', { event, user_id: session?.user?.id });
+      
       if (event === 'SIGNED_OUT') {
         clearUserData();
         logEvent('auth_sign_out_success', { scene: 'auth_listener', status: 'success' });
         return;
       }
-      void syncSession(session, event);
+      
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        void syncSession(session, event);
+      }
     });
 
     return () => subscription.unsubscribe();

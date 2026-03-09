@@ -581,6 +581,8 @@ export const useUserStore = create(
       },
       hydrateFromSupabase: async () => {
         const userId = getUserId(get());
+        // Do NOT clear data here if no userId, just return.
+        // Clearing is handled by auth listener or explicit signOut.
         if (!userId) {
           set({ isLoading: false });
           return { ok: false, errorCode: 'AUTH_REQUIRED' };
