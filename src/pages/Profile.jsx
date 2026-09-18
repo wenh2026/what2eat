@@ -225,22 +225,24 @@ const Profile = () => {
             </div>
           </section>
 
-          <section className="mx-6 mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-muted-ui dark:border-gray-700 dark:bg-deep-charcoal">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <span>{t('profile_debug_supabase', { defaultValue: 'Supabase' })}</span>
-                <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400">{supabaseMeta.keySource}</span>
-              </div>
-              <div className="font-mono text-[11px] text-gray-500 dark:text-gray-400 break-all">{supabaseMeta.url}</div>
-              {lastSyncError ? (
-                <div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-                  <div className="font-semibold">{t('profile_debug_last_error', { defaultValue: 'Last sync error' })}</div>
-                  <div className="font-mono break-all">{lastSyncError.scene} · {lastSyncError.code}</div>
-                  <div className="opacity-90">{lastSyncError.message}</div>
+          {import.meta.env.DEV && (
+            <section className="mx-6 mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-muted-ui dark:border-gray-700 dark:bg-deep-charcoal">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span>{t('profile_debug_supabase', { defaultValue: 'Supabase' })}</span>
+                  <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400">{supabaseMeta.keySource}</span>
                 </div>
-              ) : null}
-            </div>
-          </section>
+                <div className="font-mono text-[11px] text-gray-500 dark:text-gray-400 break-all">{supabaseMeta.url}</div>
+                {lastSyncError ? (
+                  <div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                    <div className="font-semibold">{t('profile_debug_last_error', { defaultValue: 'Last sync error' })}</div>
+                    <div className="font-mono break-all">{lastSyncError.scene} · {lastSyncError.code}</div>
+                    <div className="opacity-90">{lastSyncError.message}</div>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          )}
 
           <section className="px-6 mt-8">
             <div className="persona-card rounded-2xl p-6 relative overflow-hidden">

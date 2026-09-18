@@ -39,7 +39,7 @@ const Auth = () => {
           email,
           password,
         });
-        if (error) throw error;
+           if (error) throw error;
         logEvent('auth_sign_up_success', { scene: 'auth_form', status: 'success', email });
         setMessage(t('auth_sign_up_success'));
         setMessageType('success');
@@ -49,7 +49,12 @@ const Auth = () => {
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('Email not confirmed') || error.message.includes('Email link not clicked')) {
+            throw new Error(t('auth_email_not_confirmed'));
+          }
+          throw error;
+        }
         const hydrateResult = await hydrateFromSupabase();
         if (!hydrateResult?.ok) {
           setMessage(t('auth_sync_failed'));
