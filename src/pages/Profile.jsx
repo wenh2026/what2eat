@@ -9,6 +9,7 @@ import { RDA_DATA, calculateNutrientDeviation } from '../logic/dietaryGuidelines
 import { supabaseMeta } from '../lib/supabase';
 
 const Profile = () => {
+  console.log('Environment DEV:', import.meta.env.DEV, 'PROD:', import.meta.env.PROD);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, signOut, isDarkMode, toggleDarkMode, userProfile, updateUserProfile, dailyMeals, favorites, toggleFavorite, lastSyncError } = useUserStore();
@@ -225,7 +226,7 @@ const Profile = () => {
             </div>
           </section>
 
-          {import.meta.env.DEV && (
+          {!import.meta.env.PROD && (
             <section className="mx-6 mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-muted-ui dark:border-gray-700 dark:bg-deep-charcoal">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
